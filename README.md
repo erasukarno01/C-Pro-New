@@ -45,11 +45,11 @@ Smart Manufacturing MES adalah platform digital **Manufacturing Execution System
 
 ### Target Industri
 
-- Automotive
-- Electronics
+- Otomotif
+- Elektronik
 - Injection Molding
-- Assembly Manufacturing
-- Smart Factory
+- Perakitan
+- Pabrik Cerdas
 
 ### Modul Utama
 
@@ -63,7 +63,7 @@ Smart Manufacturing MES adalah platform digital **Manufacturing Execution System
 | 6 | Autonomous Maintenance | Pemeliharaan mandiri workstation berbasis master AM check item |
 | 7 | Digital Inspection System | Sistem inspeksi digital termasuk master 5F/5L check item |
 | 8 | Dynamic Line Balancing | Penyeimbangan lini produksi |
-| 9 | Manufacturing Analytics | Analitik dan prediksi berbasis |
+| 9 | Manufacturing Analytics | Analitik dan prediksi berbasis data |
 | 10 | Smart Factory Platform | Platform terintegrasi smart factory |
 
 ---
@@ -113,12 +113,12 @@ Sistem menggunakan teknologi realtime berikut:
 - **WebSocket** — koneksi bidireksional persisten
 - **Push Notification** — notifikasi instan ke device
 
-### Realtime Monitoring Scope
+### Ruang Lingkup Pemantauan Realtime
 
-- Production monitoring
-- Andon monitoring
-- Machine monitoring
-- Operator monitoring
+- Pemantauan produksi
+- Pemantauan andon
+- Pemantauan mesin
+- Pemantauan operator
 
 ---
 
@@ -138,12 +138,12 @@ Manager
 
 | Role | Access Level | Deskripsi |
 |------|-------------|-----------|
-| Super Admin | Full system access | Akses penuh ke seluruh sistem |
-| Manager | All supervisors and lines | Monitoring semua supervisor dan lini |
-| Supervisor | All leaders and lines under supervision | Monitoring leader dan lini di bawah supervisi |
-| Leader | All sub leaders and operators | Monitoring sub leader dan operator |
-| Sub Leader | Operational input | Input operasional harian |
-| Operator | View only / attendance | Lihat data dan absensi |
+| Super Admin | Akses penuh sistem | Akses penuh ke seluruh sistem |
+| Manager | Semua supervisor & lini | Monitoring semua supervisor dan lini |
+| Supervisor | Semua leader & lini di bawah pengawasan | Monitoring leader dan lini di bawah supervisi |
+| Leader | Semua sub leader & operator | Monitoring sub leader dan operator |
+| Sub Leader | Input operasional | Input operasional harian |
+| Operator | Hanya melihat / kehadiran | Lihat data dan absensi |
 
 ---
 
@@ -823,10 +823,10 @@ membaca:
 
 | Technology | Keterangan |
 |-----------|-----------|
-| TanStack Start | React framework utama |
+| TanStack Start | Framework React yang digunakan |
 | TailwindCSS | Utility-first CSS framework |
-| Shadcn UI | Komponen UI siap pakai |
-| PWA Mobile | Progressive Web App mobile |
+| Shadcn UI | Kumpulan komponen UI siap pakai |
+| PWA Mobile | Aplikasi web progresif untuk mobile |
 
 ### Backend
 
@@ -845,12 +845,12 @@ membaca:
 | Gemini | Model alternatif |
 | Kimi | Model tambahan |
 
-### Reporting & Visualization
+### Pelaporan & Visualisasi
 
 | Technology | Keterangan |
 |-----------|-----------|
-| Power BI | Business intelligence reporting |
-| Grafana | Dashboard monitoring & metrics |
+| Power BI | Pelaporan business intelligence |
+| Grafana | Dashboard pemantauan & metrik |
 
 ### IoT Integration
 
@@ -860,18 +860,18 @@ membaca:
 | RFID | Validasi kartu identitas operator |
 | QR Scanner | Scanning QR code produk & WO |
 
-### Smart Factory Features
+### Fitur Smart Factory
 
 | Feature | Keterangan |
 |---------|-----------|
 | RFID Validation | Validasi operator masuk workstation |
-| QR Tracking | Tracking produk dan WO |
-| IoT Machine Monitoring | Monitoring kondisi mesin |
-| Predictive Maintenance | Prediksi kebutuhan maintenance |
-| Line Balancing | Optimasi lini berbasis |
+| QR Tracking | Pelacakan produk dan WO |
+| IoT Machine Monitoring | Pemantauan kondisi mesin via IoT |
+| Predictive Maintenance | Prediksi kebutuhan pemeliharaan |
+| Line Balancing | Optimalisasi lini produksi |
 | Face Recognition | Pengenalan wajah operator |
 | Auto Time Study | Studi waktu otomatis |
-| Digital Gemba | Monitoring lapangan digital |
+| Digital Gemba | Pemantauan lapangan secara digital |
 
 ---
 
