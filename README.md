@@ -329,7 +329,7 @@ Karena working time berbeda antar shift, line balance harus mempertimbangkan:
 | Active Status | BOOLEAN |
 | Saturday Working | BOOLEAN |
 
-**Table: `shift_breaks`**
+**Table:  `shift_breaks`**
 
 | Field | Type |
 |-------|------|
