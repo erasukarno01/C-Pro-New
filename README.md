@@ -1,11 +1,13 @@
 # Smart Manufacturing MES
 ## Dokumentasi Proyek
 
-**Nama Proyek:** Smart Manufacturing MES  
+**Nama Proyek:** C-PRO <br>Chao Long Production System  
 **Perusahaan:** PT Chao Long Motor Parts Indonesia  
 **Jenis Dokumen:** Dokumentasi Proyek  
 **Versi:** 1.0  
 **Klasifikasi:** Internal
+
+Database menggunakan Supabase lokal.
 
 ---
 
@@ -41,13 +43,12 @@
 
 ## 1. Gambaran Proyek
 
-Smart Manufacturing MES adalah platform digital **Manufacturing Execution System (MES)** yang dirancang untuk mendukung operasional produksi di PT Chao Long Motor Parts Indonesia. Sistem ini mengintegrasikan monitoring produksi realtime, validasi proses, manajemen sumber daya manusia, hingga analitik berbasis AI.
+C_PRO adalah versi Lokal/Internal **Manufacturing Execution System (MES)** yang dirancang untuk mendukung operasional produksi di PT Chao Long Motor Parts Indonesia. Sistem ini mengintegrasikan monitoring produksi realtime, validasi proses, manajemen sumber daya manusia, hingga analitik berbasis AI.
 
 ### Target Industri
 
 - Otomotif
 - Elektronik
-- Injection Molding
 - Perakitan
 - Pabrik Cerdas
 
@@ -128,10 +129,11 @@ Sistem menggunakan teknologi realtime berikut:
 
 ```
 Manager
- └── Supervisor
-      └── Leader
-           └── Sub Leader
-                └── Operator
+ └── Assistant Manager
+     └── Supervisor
+         └── Leader
+             └── Sub Leader
+                 └── Operator
 ```
 
 ### Role Permission Matrix
@@ -139,7 +141,8 @@ Manager
 | Role | Access Level | Deskripsi |
 |------|-------------|-----------|
 | Super Admin | Akses penuh sistem | Akses penuh ke seluruh sistem |
-| Manager | Semua supervisor & lini | Monitoring semua supervisor dan lini |
+| Manager | Semua assistant manager & lini | Monitoring semua assistant manager dan lini |
+| Assistant Manager | Semua supervisor, leader, dan lini | Monitoring semua supervisor, leader, dan lini |
 | Supervisor | Semua leader & lini di bawah pengawasan | Monitoring leader dan lini di bawah supervisi |
 | Leader | Semua sub leader & operator | Monitoring sub leader dan operator |
 | Sub Leader | Input operasional | Input operasional harian |
@@ -158,8 +161,9 @@ PT Chao Long Motor Parts Indonesia memiliki struktur produksi sebagai berikut:
 | Category | Deskripsi |
 |----------|-----------|
 | SMT | Surface Mount Technology |
-| Sub Assy | Sub Assembly |
-| Final Assy | Final Assembly |
+| Section 1 | CCU, USB Charger and Meter Assy |
+| Section 2 | Speedometer, and Sensor |
+| DPP | Dial Plate Printing |
 
 **Product Categories:**
 
@@ -194,15 +198,39 @@ Setiap line produksi memiliki group:
 
 ---
 
+### Detail Section 1
+
+```
+Section 1
+       └── Line CCU 1
+    |   └── Group A
+    |   └── Group B
+    |   └── Group C
+       └── Line CCU 2
+    |   └── Group A
+    |   └── Group B
+    |   └── Group C
+       └── Line CCU 3
+    |   └── Group A
+    |   └── Group B
+    |   └── Group C
+       └── Line USB Charger 1
+    |   └── Group A
+    |   └── Group B
+    |   └── Group C
+```
+
+
 ## 6. Manajemen Shift & Waktu Kerja
 
 ### Shift Types
 
 | Shift Type | Durasi Kerja |
 |-----------|-------------|
-| Shift 1 | 7 jam kerja |
-| Shift 2 | 8 jam kerja |
-| Shift 3 | 12 jam kerja |
+| Non shift type  | 8 jam kerja |
+| 2 Shift type | 8 jam kerja |
+| 3 shift type  | 7 jam kerja |
+| Long Shift type | 12 jam kerja |
 
 ### Multiple Break Management
 
@@ -216,13 +244,28 @@ Setiap shift memiliki beberapa sesi istirahat:
 
 > Durasi dapat berbeda tergantung tipe shift.
 
+```
+Non shift type
+ └── Non shift/Regular
+2 Shift type
+ └── Shift 1 (8 jam kerja)
+ └── Shift 2 (8 jam kerja)
+3 shift type 
+ └── Shift 1 (7 jam kerja)
+ └── Shift 2 (7 jam kerja)
+ └── Shift 3 (7 jam kerja)
+Long shift type
+ └── Shift 1 (12 jam kerja)
+ └── Shift 2 (12 jam kerja)
+```
+
 ### Friday Special Rule
 
 Sistem wajib memperhitungkan aturan khusus hari Jumat:
 
-- Waktu istirahat berbeda dari hari biasa
+- Waktu istirahat makan siang berbeda dari hari biasa (Senin-Kamis)
 - Tambahan waktu sholat Jumat
-- Jam kerja efektif berbeda
+- Jam kerja efektif shift 1 berbeda (Hanya Jam kerja shift 1 semua type shift yang berbeda)
 
 **Friday System Requirements:**
 - Menghitung effective working time hari Jumat
@@ -235,6 +278,8 @@ Sistem wajib memperhitungkan aturan khusus hari Jumat:
 Untuk shift 7 jam:
 - Terdapat tambahan hari kerja di hari Sabtu
 - Digunakan untuk memenuhi 40 jam kerja per minggu
+
+**Aturan Tambahan:** Jika `Shift = 7 jam kerja`, maka pada minggu tersebut operator wajib masuk pada hari Sabtu selama 5 jam kerja untuk memenuhi aturan 40 jam per minggu.
 
 **System Requirements:**
 - Menghitung total working hour mingguan
@@ -282,6 +327,7 @@ Karena working time berbeda antar shift, line balance harus mempertimbangkan:
 | Shift Type | ENUM |
 | Working Hour | DECIMAL |
 | Active Status | BOOLEAN |
+| Saturday Working | BOOLEAN |
 
 **Table: `shift_breaks`**
 
@@ -832,8 +878,8 @@ membaca:
 
 | Technology | Keterangan |
 |-----------|-----------|
-| Supabase | Backend-as-a-Service |
-| PostgreSQL | Database relasional |
+| Supabase | Backend-as-a-Service (local) |
+| PostgreSQL | Database relasional (melalui Supabase local) |
 | Supabase Auth | Autentikasi & otorisasi |
 | Supabase Storage | Penyimpanan file & foto |
 
