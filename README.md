@@ -241,41 +241,57 @@ Contoh alur bisnis:
 5. Jika ada shortage, sistem memicu rekomendasi manpower atau delegasi.
 ---
 
-### Detail Section 1
-Section 1
-       └── Line CCU 1
-    |   └── Group A
-    |   └── Group C
-    |   └── Group A
-    |   └── Group B
-    |   └── Group C
-       └── Line CCU 3
-    |   └── Group A
-    |   └── Group B
-    |   └── Group C
-       └── Line USB Charger 1
-    |   └── Group A
-    |   └── Group B
-    |   └── Group C
-    ### Line Manajemen Struktur
+### Struktur Section 1
 
-    ```
-    Section 1
-        └── Group CCU
-            └── Workstation CCU 1
-            └── Workstation CCU 2
-            └── Workstation CCU 3
-            └── Workstation CCU 4
-            └── Workstation CCU 5
-            └── Workstation CCU 6
+Section 1 adalah contoh area produksi yang terdiri dari beberapa line dan group kerja. Strukturnya sebagai berikut:
 
-        └── Group USB Charger
-            └── Workstation USB 1
-            └── Workstation USB 2
-            └── Workstation USB 3
-            └── Workstation USB 4
-    ```
+```mermaid
+flowchart TB
+    S1[Section 1] --> CCU1[Line CCU 1]
+    S1 --> CCU2[Line CCU 2]
+    S1 --> CCU3[Line CCU 3]
+    S1 --> USB1[Line USB Charger 1]
 
+    CCU1 --> A1[Group A]
+    CCU1 --> B1[Group B]
+    CCU1 --> C1[Group C]
+
+    CCU2 --> A2[Group A]
+    CCU2 --> B2[Group B]
+    CCU2 --> C2[Group C]
+
+    CCU3 --> A3[Group A]
+    CCU3 --> B3[Group B]
+    CCU3 --> C3[Group C]
+
+    USB1 --> AU[Group A]
+    USB1 --> BU[Group B]
+    USB1 --> CU[Group C]
+```
+
+### Detail Line CCU / USB
+
+Contoh mapping workstation di Section 1:
+
+| Line | Group | Workstation |
+|------|-------|-------------|
+| Line CCU | Group CCU | Workstation CCU 1 |
+| Line CCU | Group CCU | Workstation CCU 2 |
+| Line CCU | Group CCU | Workstation CCU 3 |
+| Line CCU | Group CCU | Workstation CCU 4 |
+| Line CCU | Group CCU | Workstation CCU 5 |
+| Line CCU | Group CCU | Workstation CCU 6 |
+| Line USB Charger | Group USB Charger | Workstation USB 1 |
+| Line USB Charger | Group USB Charger | Workstation USB 2 |
+| Line USB Charger | Group USB Charger | Workstation USB 3 |
+| Line USB Charger | Group USB Charger | Workstation USB 4 |
+
+```mermaid
+flowchart LR
+    CCU[Line CCU] --> CCUW[Workstation CCU 1-6]
+    USB[Line USB Charger] --> USBW[Workstation USB 1-4]
+    CCUW --> O1[Operator Assignment]
+    USBW --> O2[Operator Assignment]
 ```
 
 
@@ -1229,6 +1245,39 @@ membaca:
 | `productivity_reports` | Data produktivitas |
 | `defect_reports` | Data defect produksi |
 | `efficiency_reports` | Data efisiensi lini |
+
+### ERD Ringkas — Core Manufacturing Structure
+
+```mermaid
+erDiagram
+    USERS ||--o{ MANPOWER_ASSIGNMENTS : assigns
+    ROLES ||--o{ USERS : has
+    LINES ||--o{ WORKSTATIONS : contains
+    LINES ||--o{ PRODUCTION_GROUPS : groups
+    WORKSTATIONS ||--o{ WORKSTATION_SKILL_REQUIREMENTS : requires
+    WORKSTATIONS ||--o{ WORKSTATION_DEFAULTS : defaults
+    WORKSTATIONS ||--o{ MANPOWER_ASSIGNMENTS : receives
+    OPERATORS ||--o{ OPERATOR_SKILLS : has
+    SKILLS ||--o{ OPERATOR_SKILLS : defines
+    OPERATORS ||--o{ MANPOWER_ASSIGNMENTS : assigned_to
+    WORK_ORDERS ||--o{ MANPOWER_ASSIGNMENTS : drives
+    WORK_ORDERS ||--o{ HOURLY_PRODUCTION : tracks
+    WORKSTATIONS ||--o{ AUTONOMOUS_CHECK_ITEMS : standardizes
+    WORKSTATIONS ||--o{ FIVEF5L_CHECK_ITEMS : standardizes
+    WORKSTATIONS ||--o{ AUTONOMOUS_MAINTENANCE_LOGS : logged_in
+    WORKSTATIONS ||--o{ INSPECTIONS : logged_in
+```
+
+Relasi inti yang perlu dipahami:
+
+| Entitas | Relasi |
+|---------|--------|
+| `lines` | 1 line memiliki banyak `workstations` dan banyak `production_groups` |
+| `workstations` | 1 workstation memiliki banyak requirement, default manpower, dan assignment operator |
+| `operators` | 1 operator dapat punya banyak skill dan banyak assignment historis |
+| `skills` | menjadi referensi master kompetensi untuk `operator_skills` |
+| `work_orders` | memicu assignment manpower dan pencatatan output produksi |
+| `autonomous_check_items` / `fivef5l_check_items` | menjadi master checklist berbasis workstation |
 
 ### Additional Master Tables (Manufacturing Structure)
 
