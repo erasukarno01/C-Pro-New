@@ -1356,6 +1356,67 @@ Aturan relasi operasional:
 - `workstation_defaults` menentukan headcount default saat WO dibuat.
 - `manpower_assignments` menjadi jembatan operasional antara WO, workstation, dan operator.
 
+### ERD Terpadu — Work Order, Assignment, dan Skill
+
+```mermaid
+erDiagram
+    WORK_ORDERS ||--o{ MANPOWER_ASSIGNMENTS : creates
+    WORKSTATIONS ||--o{ MANPOWER_ASSIGNMENTS : receives
+    OPERATORS ||--o{ MANPOWER_ASSIGNMENTS : assigned_to
+    OPERATORS ||--o{ OPERATOR_SKILLS : has
+    SKILLS ||--o{ OPERATOR_SKILLS : defines
+    WORKSTATIONS ||--o{ WORKSTATION_SKILL_REQUIREMENTS : requires
+
+    WORK_ORDERS {
+        uuid id PK
+        uuid line_id FK_NULL
+        uuid product_id FK_NULL
+        uuid shift_id FK_NULL
+        numeric planned_quantity
+        numeric planned_cycle_time
+        int required_manpower
+        varchar status
+        timestamptz released_at
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    MANPOWER_ASSIGNMENTS {
+        uuid id PK
+        uuid work_order_id FK_NULL
+        uuid workstation_id FK
+        uuid operator_id FK
+        varchar role
+        timestamptz assigned_at
+        uuid assigned_by FK_NULL
+        boolean active
+        text notes
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    OPERATOR_SKILLS {
+        uuid id PK
+        uuid operator_id FK
+        uuid skill_id FK
+        int level
+        timestamptz assessed_at
+        timestamptz certified_until
+        text evidence_url
+        text notes
+        timestamptz created_at
+        timestamptz updated_at
+    }
+```
+
+Alur runtime validation yang direkomendasikan:
+
+1. WO dirilis dan system membaca workstation yang terlibat.
+2. Sistem mencari kandidat operator dari `operator_skills`.
+3. `validateOperatorAssignment()` dipanggil saat preview assignment atau sebelum insert `manpower_assignments`.
+4. Jika skill minimum tidak terpenuhi, assignment diberi status review atau diblokir.
+5. Jika eligible, assignment disimpan dan dipakai untuk monitoring produksi.
+
 ### ERD Detail — Line, Group, dan Workstation
 
 ```mermaid
