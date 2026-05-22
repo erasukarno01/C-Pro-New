@@ -1356,6 +1356,67 @@ Aturan relasi operasional:
 - `workstation_defaults` menentukan headcount default saat WO dibuat.
 - `manpower_assignments` menjadi jembatan operasional antara WO, workstation, dan operator.
 
+### ERD Detail — Line, Group, dan Workstation
+
+```mermaid
+erDiagram
+    LINES ||--o{ PRODUCTION_GROUPS : contains
+    LINES ||--o{ WORKSTATIONS : hosts
+    PRODUCTION_GROUPS ||--o{ WORKSTATIONS : organizes
+    WORKSTATIONS ||--o{ WORKSTATION_SKILL_REQUIREMENTS : requires
+    WORKSTATIONS ||--o{ WORKSTATION_DEFAULTS : defaults
+    WORKSTATIONS ||--o{ MANPOWER_ASSIGNMENTS : receives
+
+    LINES {
+        uuid id PK
+        varchar code
+        varchar name
+        varchar section
+        boolean active
+        uuid supervisor_id FK_NULL
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    PRODUCTION_GROUPS {
+        uuid id PK
+        uuid line_id FK
+        varchar group_name
+        varchar category
+        uuid supervisor_id FK_NULL
+        int sort_order
+        boolean active
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    WORKSTATIONS {
+        uuid id PK
+        uuid line_id FK
+        uuid group_id FK_NULL
+        varchar name
+        int sequence
+        int minimum_skill
+        numeric ideal_cycle_time
+        boolean active
+        timestamptz created_at
+        timestamptz updated_at
+    }
+```
+
+| Tabel | Fungsi | Key Relasi |
+|-------|--------|------------|
+| `lines` | Menyimpan line produksi per section / area | Direferensikan oleh `production_groups.line_id` dan `workstations.line_id` |
+| `production_groups` | Mengelompokkan line berdasarkan group kerja | `line_id` → `lines.id`, bisa dipakai untuk rotasi manpower |
+| `workstations` | Unit kerja spesifik yang diisi operator | `line_id` → `lines.id`, `group_id` nullable → `production_groups.id` |
+
+Aturan operasional:
+
+- `lines` adalah level paling atas untuk monitoring produksi, WO, dan reporting.
+- `production_groups` dipakai untuk memisahkan zona kerja, leader assignment, dan balancing.
+- `workstations` adalah level eksekusi tempat validasi skill, assignment operator, dan input hasil produksi berjalan.
+- Jika `group_id` tidak diisi, workstation tetap terikat ke line melalui `line_id`.
+
 ### Additional Master Tables (Manufacturing Structure)
 
 **Table: `production_groups`**
