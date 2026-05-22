@@ -79,6 +79,21 @@ export type TrainingWorkspaceSnapshot = {
   changes: SkillChangeRecord[];
 };
 
+export type OperatorSkillHistorySnapshot = {
+  source: "supabase" | "preview";
+  operators: TrainingReferenceOption[];
+  skills: TrainingReferenceOption[];
+  selectedOperatorId: string;
+  selectedOperatorLabel: string;
+  changes: SkillChangeRecord[];
+  summary: {
+    totalChanges: number;
+    createdCount: number;
+    updatedCount: number;
+    deletedCount: number;
+  };
+};
+
 export type TrainingSessionInput = {
   trainingCode: string;
   operatorId: string;
@@ -482,4 +497,83 @@ export async function deleteSkillAssessment(id: string): Promise<void> {
 
 export function getTrainingWorkspacePreview(): TrainingWorkspaceSnapshot {
   return buildPreviewSnapshot();
+}
+
+function buildPreviewOperatorHistorySnapshot(): OperatorSkillHistorySnapshot {
+  const preview = buildPreviewSnapshot();
+  const selectedOperator = preview.operators[0];
+  const filteredChanges = preview.changes.filter((change) => change.operatorId === selectedOperator.id);
+
+  return {
+    source: preview.source,
+    operators: preview.operators,
+    skills: preview.skills,
+    selectedOperatorId: selectedOperator.id,
+    selectedOperatorLabel: selectedOperator.label,
+    changes: filteredChanges,
+    summary: {
+      totalChanges: filteredChanges.length,
+      createdCount: filteredChanges.filter((change) => change.changeType === "created").length,
+      updatedCount: filteredChanges.filter((change) => change.changeType === "updated").length,
+      deletedCount: filteredChanges.filter((change) => change.changeType === "deleted").length,
+    },
+  };
+}
+
+export async function fetchOperatorSkillHistorySnapshot(operatorId?: string): Promise<OperatorSkillHistorySnapshot> {
+  if (!supabase) {
+    return buildPreviewOperatorHistorySnapshot();
+  }
+
+  const [operatorsResult, skillsResult, changesResult] = await Promise.all([
+    supabase.from("operators").select("id,nik,name,active").eq("active", true).order("nik", { ascending: true }),
+    supabase.from("skills").select("id,code,name").order("code", { ascending: true }),
+    operatorId
+      ? supabase
+          .from("operator_skill_changes")
+          .select("id,assessment_id,training_session_id,operator_id,skill_id,change_type,old_level,new_level,old_status,new_status,changed_by,reason,changed_at,created_at,updated_at")
+          .eq("operator_id", operatorId)
+          .order("changed_at", { ascending: false })
+      : supabase
+          .from("operator_skill_changes")
+          .select("id,assessment_id,training_session_id,operator_id,skill_id,change_type,old_level,new_level,old_status,new_status,changed_by,reason,changed_at,created_at,updated_at")
+          .order("changed_at", { ascending: false }),
+  ]);
+
+  if (operatorsResult.error) {
+    throw mapTrainingError(operatorsResult.error.message);
+  }
+
+  if (skillsResult.error) {
+    throw mapTrainingError(skillsResult.error.message);
+  }
+
+  if (changesResult.error) {
+    throw mapTrainingError(changesResult.error.message);
+  }
+
+  const operators = (operatorsResult.data ?? []) as OperatorRow[];
+  const skills = (skillsResult.data ?? []) as SkillRow[];
+  const changes = (changesResult.data ?? []) as SkillChangeRow[];
+
+  const operatorMap = new Map(operators.map((operator) => [operator.id, operator]));
+  const skillMap = new Map(skills.map((skill) => [skill.id, skill]));
+  const selectedOperator = operatorId ? operators.find((operator) => operator.id === operatorId) : operators[0];
+  const selectedOperatorId = selectedOperator?.id ?? operatorId ?? "";
+  const selectedOperatorLabel = selectedOperator ? getOperatorLabel(selectedOperator) : operatorId ?? "-";
+
+  return {
+    source: "supabase",
+    operators: operators.map((operator) => ({ id: operator.id, label: getOperatorLabel(operator) })),
+    skills: skills.map((skill) => ({ id: skill.id, label: getSkillLabel(skill) })),
+    selectedOperatorId,
+    selectedOperatorLabel,
+    changes: changes.map((change) => mapSkillChange(change, operatorMap, skillMap)),
+    summary: {
+      totalChanges: changes.length,
+      createdCount: changes.filter((change) => change.change_type === "created").length,
+      updatedCount: changes.filter((change) => change.change_type === "updated").length,
+      deletedCount: changes.filter((change) => change.change_type === "deleted").length,
+    },
+  };
 }

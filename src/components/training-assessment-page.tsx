@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { AlertTriangle, ClipboardList, Clock3, GraduationCap, History, RefreshCcw, Save, Trash2 } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 import { cn } from "@/lib/utils";
 import {
   deleteSkillAssessment,
@@ -131,6 +132,14 @@ export function TrainingAssessmentPage() {
   const [activeTab, setActiveTab] = useState<"training" | "assessment">("training");
   const [editingTrainingId, setEditingTrainingId] = useState<string | null>(null);
   const [editingAssessmentId, setEditingAssessmentId] = useState<string | null>(null);
+  const [sessionSearch, setSessionSearch] = useState("");
+  const [sessionStatusFilter, setSessionStatusFilter] = useState<"all" | TrainingSessionStatus>("all");
+  const [sessionOperatorFilter, setSessionOperatorFilter] = useState("all");
+  const [sessionSkillFilter, setSessionSkillFilter] = useState("all");
+  const [assessmentSearch, setAssessmentSearch] = useState("");
+  const [assessmentStatusFilter, setAssessmentStatusFilter] = useState<"all" | SkillAssessmentStatus>("all");
+  const [assessmentOperatorFilter, setAssessmentOperatorFilter] = useState("all");
+  const [assessmentSkillFilter, setAssessmentSkillFilter] = useState("all");
   const [trainingForm, setTrainingForm] = useState<TrainingSessionFormState>(emptyTrainingForm());
   const [assessmentForm, setAssessmentForm] = useState<AssessmentFormState>(emptyAssessmentForm());
 
@@ -317,6 +326,45 @@ export function TrainingAssessmentPage() {
     auditEntries: snapshot.changes.length,
   };
 
+  const sessionSearchValue = sessionSearch.trim().toLowerCase();
+  const assessmentSearchValue = assessmentSearch.trim().toLowerCase();
+
+  const filteredSessions = snapshot.sessions.filter((session) => {
+    const matchesSearch =
+      sessionSearchValue.length === 0 ||
+      [session.trainingCode, session.operatorNik, session.operatorName, session.skillCode, session.skillName, session.trainerName, session.location ?? "", session.notes ?? ""]
+        .join(" ")
+        .toLowerCase()
+        .includes(sessionSearchValue);
+    const matchesStatus = sessionStatusFilter === "all" || session.status === sessionStatusFilter;
+    const matchesOperator = sessionOperatorFilter === "all" || session.operatorId === sessionOperatorFilter;
+    const matchesSkill = sessionSkillFilter === "all" || session.skillId === sessionSkillFilter;
+
+    return matchesSearch && matchesStatus && matchesOperator && matchesSkill;
+  });
+
+  const filteredAssessments = snapshot.assessments.filter((assessment) => {
+    const matchesSearch =
+      assessmentSearchValue.length === 0 ||
+      [
+        assessment.operatorNik,
+        assessment.operatorName,
+        assessment.skillCode,
+        assessment.skillName,
+        assessment.assessedBy,
+        assessment.notes ?? "",
+        assessment.evidenceUrl ?? "",
+      ]
+        .join(" ")
+        .toLowerCase()
+        .includes(assessmentSearchValue);
+    const matchesStatus = assessmentStatusFilter === "all" || assessment.status === assessmentStatusFilter;
+    const matchesOperator = assessmentOperatorFilter === "all" || assessment.operatorId === assessmentOperatorFilter;
+    const matchesSkill = assessmentSkillFilter === "all" || assessment.skillId === assessmentSkillFilter;
+
+    return matchesSearch && matchesStatus && matchesOperator && matchesSkill;
+  });
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -334,6 +382,12 @@ export function TrainingAssessmentPage() {
         </div>
 
         <div className="flex items-center gap-3">
+          <Link
+            to="/dashboard/operator-history"
+            className="inline-flex items-center gap-2 rounded-lg border border-border bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-accent transition-colors"
+          >
+            Riwayat Operator
+          </Link>
           <button
             type="button"
             onClick={() => void loadWorkspace()}
@@ -547,6 +601,55 @@ export function TrainingAssessmentPage() {
                 icon={Clock3}
               />
             </div>
+            <div className="border-b border-border bg-background/50 p-4">
+              <div className="grid gap-3 md:grid-cols-4">
+                <input
+                  value={sessionSearch}
+                  onChange={(event) => setSessionSearch(event.target.value)}
+                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
+                  placeholder="Cari code / operator / skill / trainer"
+                />
+                <select
+                  value={sessionStatusFilter}
+                  onChange={(event) => setSessionStatusFilter(event.target.value as TrainingSessionStatus | "all")}
+                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
+                >
+                  <option value="all">Semua status</option>
+                  {trainingStatuses.map((status) => (
+                    <option key={status} value={status}>
+                      {status}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  value={sessionOperatorFilter}
+                  onChange={(event) => setSessionOperatorFilter(event.target.value)}
+                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
+                >
+                  <option value="all">Semua operator</option>
+                  {snapshot.operators.map((operator) => (
+                    <option key={operator.id} value={operator.id}>
+                      {operator.label}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  value={sessionSkillFilter}
+                  onChange={(event) => setSessionSkillFilter(event.target.value)}
+                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
+                >
+                  <option value="all">Semua skill</option>
+                  {snapshot.skills.map((skill) => (
+                    <option key={skill.id} value={skill.id}>
+                      {skill.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <p className="mt-3 text-xs text-muted-foreground">
+                Menampilkan {filteredSessions.length} dari {snapshot.sessions.length} training session.
+              </p>
+            </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="bg-muted border-b border-border">
@@ -566,14 +669,14 @@ export function TrainingAssessmentPage() {
                         Loading training sessions...
                       </td>
                     </tr>
-                  ) : snapshot.sessions.length === 0 ? (
+                  ) : filteredSessions.length === 0 ? (
                     <tr>
                       <td className="p-4 text-muted-foreground" colSpan={6}>
-                        Belum ada training session.
+                        Tidak ada training session yang cocok dengan filter.
                       </td>
                     </tr>
                   ) : (
-                    snapshot.sessions.map((session) => (
+                    filteredSessions.map((session) => (
                       <tr key={session.id} className="border-b border-border hover:bg-accent/50 transition-colors">
                         <td className="p-4 font-medium text-foreground">{session.trainingCode}</td>
                         <td className="p-4 text-muted-foreground">
@@ -792,6 +895,55 @@ export function TrainingAssessmentPage() {
                     icon={History}
                   />
                 </div>
+                <div className="border-b border-border bg-background/50 p-4">
+                  <div className="grid gap-3 md:grid-cols-4">
+                    <input
+                      value={assessmentSearch}
+                      onChange={(event) => setAssessmentSearch(event.target.value)}
+                      className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
+                      placeholder="Cari operator / skill / assessor"
+                    />
+                    <select
+                      value={assessmentStatusFilter}
+                      onChange={(event) => setAssessmentStatusFilter(event.target.value as SkillAssessmentStatus | "all")}
+                      className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
+                    >
+                      <option value="all">Semua status</option>
+                      {assessmentStatuses.map((status) => (
+                        <option key={status} value={status}>
+                          {status}
+                        </option>
+                      ))}
+                    </select>
+                    <select
+                      value={assessmentOperatorFilter}
+                      onChange={(event) => setAssessmentOperatorFilter(event.target.value)}
+                      className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
+                    >
+                      <option value="all">Semua operator</option>
+                      {snapshot.operators.map((operator) => (
+                        <option key={operator.id} value={operator.id}>
+                          {operator.label}
+                        </option>
+                      ))}
+                    </select>
+                    <select
+                      value={assessmentSkillFilter}
+                      onChange={(event) => setAssessmentSkillFilter(event.target.value)}
+                      className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
+                    >
+                      <option value="all">Semua skill</option>
+                      {snapshot.skills.map((skill) => (
+                        <option key={skill.id} value={skill.id}>
+                          {skill.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <p className="mt-3 text-xs text-muted-foreground">
+                    Menampilkan {filteredAssessments.length} dari {snapshot.assessments.length} assessment.
+                  </p>
+                </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead className="bg-muted border-b border-border">
@@ -810,14 +962,14 @@ export function TrainingAssessmentPage() {
                             Loading assessments...
                           </td>
                         </tr>
-                      ) : snapshot.assessments.length === 0 ? (
+                      ) : filteredAssessments.length === 0 ? (
                         <tr>
                           <td className="p-4 text-muted-foreground" colSpan={5}>
-                            Belum ada assessment.
+                            Tidak ada assessment yang cocok dengan filter.
                           </td>
                         </tr>
                       ) : (
-                        snapshot.assessments.map((assessment) => (
+                        filteredAssessments.map((assessment) => (
                           <tr key={assessment.id} className="border-b border-border hover:bg-accent/50 transition-colors">
                             <td className="p-4 text-foreground">
                               {assessment.operatorNik} - {assessment.operatorName}

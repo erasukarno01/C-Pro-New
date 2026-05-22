@@ -1,10 +1,11 @@
 import { createRootRoute, createRoute, createRouter as createTanStackRouter } from "@tanstack/react-router";
-import { LayoutDashboard, Home, Box, Users, Settings, ClipboardList, ChevronLeft, ChevronRight, Sun, Moon, Eye, EyeOff, Loader2 } from "lucide-react";
+import { LayoutDashboard, Home, Box, Users, Settings, ClipboardList, History, ChevronLeft, ChevronRight, Sun, Moon, Eye, EyeOff, Loader2 } from "lucide-react";
 import { Outlet, Link, redirect } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { useTheme } from "./theme";
 import { TrainingAssessmentPage } from "@/components/training-assessment-page";
+import { OperatorSkillHistoryPage } from "@/components/operator-skill-history-page";
 import {
   fetchWorkforceAnalyticsSnapshot,
   getAssignmentPreview,
@@ -198,6 +199,7 @@ function DashboardLayout() {
     { icon: Home, label: "Home", to: "/" as const },
     { icon: Box, label: "Components", to: "/dashboard/components" as const },
     { icon: ClipboardList, label: "Training", to: "/dashboard/training" as const },
+    { icon: History, label: "Operator History", to: "/dashboard/operator-history" as const },
     { icon: Users, label: "Users", to: "/dashboard/users" as const },
     { icon: Settings, label: "Settings", to: "/dashboard/settings" as const },
   ];
@@ -770,6 +772,13 @@ export const trainingRoute = createRoute({
   component: TrainingAssessmentPage,
 });
 
+// Operator History Route
+export const operatorHistoryRoute = createRoute({
+  getParentRoute: () => dashboardRoute,
+  path: "operator-history",
+  component: OperatorSkillHistoryPage,
+});
+
 function SettingsPage() {
   return (
     <div className="space-y-6">
@@ -785,7 +794,7 @@ function SettingsPage() {
 const routeTree = rootRoute.addChildren([
   loginRoute,
   indexRoute,
-  dashboardRoute.addChildren([dashboardIndexRoute, componentsRoute, trainingRoute, usersRoute, settingsRoute]),
+  dashboardRoute.addChildren([dashboardIndexRoute, componentsRoute, trainingRoute, operatorHistoryRoute, usersRoute, settingsRoute]),
 ]);
 
 // Create Router
