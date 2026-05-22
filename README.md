@@ -43,7 +43,7 @@ Database menggunakan Supabase lokal.
 
 ## 1. Gambaran Proyek
 
-C_PRO adalah versi Lokal/Internal **Manufacturing Execution System (MES)** yang dirancang untuk mendukung operasional produksi di PT Chao Long Motor Parts Indonesia. Sistem ini mengintegrasikan monitoring produksi realtime, validasi proses, manajemen sumber daya manusia, hingga analitik berbasis AI.
+C-PRO adalah versi Lokal/Internal **Manufacturing Execution System (MES)** yang dirancang untuk mendukung operasional produksi di PT Chao Long Motor Parts Indonesia. Sistem ini mengintegrasikan monitoring produksi realtime, validasi proses, manajemen sumber daya manusia, hingga analitik berbasis AI.
 
 ### Target Industri
 
@@ -440,10 +440,10 @@ Operator Skill Level >= Minimum Skill Requirement
 
 | Level | Description |
 |-------|-------------|
-| 1 | Training |
-| 2 | Qualified |
-| 3 | Advanced |
-| 4 | Expert |
+| 1 | Belajar (Dengan pengawasan ketat) |
+| 2 | Mampu (Mandiri) |
+| 3 | Terampil (Analitikal) |
+| 4 | Expert (Bisa Melatih) |
 
 > **Validation Rule:** Minimal skill requirement adalah level **2 (Qualified)**.
 
@@ -570,15 +570,13 @@ Supervisor
 
 Setiap workstation memiliki daftar item check autonomous maintenance yang wajib dilakukan sebelum produksi dimulai.
 
-### Contoh Checklist — Injection Workstation
+### Contoh Checklist — Gluing Workstation
 
-| Item Check |
-|-----------|
-| Heater temperature |
-| Air pressure |
-| Mold cleaning |
-| Sensor condition |
-| Safety checking |
+| Item Check | Standard | Frequency | Metode |
+|-----------|-----------|-----------|-----------|
+| Air Blow Ionizer | Clean/No dust | Daily | Visually |
+| Workbench | Clean/No dust | Daily | Visually |
+| ESD Tray | Clean/No dust | Daily | Visually |
 
 ### Master Checklist Autonomous Maintenance
 
@@ -627,6 +625,19 @@ Tabel `fivef5l_check_items` menjadi master item checksheet 5F/5L per `line_id`, 
 | Photo Evidence | Dokumentasi foto |
 | Inspection Report | Laporan resmi inspeksi |
 
+### Contoh Checklist — Line CCU Product Model: D52-03
+
+| Checking Point | Specification | Metode | Measurement results (N=1..5) | Judgment |
+|---------------|---------------|--------|-------------------------------:|:--------:|
+| Burning Program (BETA) — Voltage step 1 | 1.5 ~ 1.7 V | Visual | — | OK / NG |
+| Burning Program (BETA) — Voltage step 2 | 3.0 ~ 3.4 V | Visual | — | OK / NG |
+| Burning Program (BETA) — Programming Success | No error messages | Visual | — | OK / NG |
+| Semi-Finished function inspection | Visual display — Result Inspection (PASS) | Visual | — | OK / NG |
+| Burning Program (BT official) — Correct program version | BLE Software V2.E.04 | Visual | — | OK / NG |
+| Burning Program (BT official) — Voltage 2 | 3.0 ~ 3.4 V | Visual | — | OK / NG |
+| Burning Program (BT official) — Programming Success | No error messages | Visual | — | OK / NG |
+
+
 ---
 
 ## 15. Pengawasan Produksi Per Jam
@@ -637,7 +648,7 @@ Tabel `fivef5l_check_items` menjadi master item checksheet 5F/5L per `line_id`, 
 |-------|-----------|
 | Plan Qty | Target produksi per jam |
 | Actual Qty | Realisasi produksi per jam |
-| Loss Qty | Jumlah produk loss |
+| Loss Qty | Jumlah produk Defect |
 | Downtime | Waktu henti (menit) |
 | 5M1E Abnormality | Catatan abnormalitas 5M1E |
 
