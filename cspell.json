@@ -699,8 +699,10 @@
     "Specialist",
     "Optional",
     "behavior",
-    "memicu"
-    ,"apakah","persyaratan"
+    "memicu",
+    "apakah",
+    "persyaratan",
+    "dispesifikasikan"
   ],
   
   "ignorePaths": [
