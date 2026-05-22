@@ -1,0 +1,45 @@
+project_id = "c-pro-new"
+
+[api]
+enabled = true
+schemas = ["public", "storage", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+port = 54329
+
+[db]
+port = 54330
+shadow_port = 54328
+major_version = 15
+
+[studio]
+enabled = true
+port = 54331
+
+[inbucket]
+enabled = true
+port = 54332
+
+[auth]
+enabled = true
+site_url = "http://localhost:5173"
+additional_redirect_urls = ["http://localhost:5173"]
+jwt_expiry = 3600
+
+[storage]
+enabled = true
+file_size_limit = "50MiB"
+
+[edge_runtime]
+enabled = true
+policy = "oneshot"
+
+[analytics]
+enabled = false
+
+[functions]
+enabled = true
+
+[db.seed]
+enabled = true
+sql_paths = ["./seed.sql"]

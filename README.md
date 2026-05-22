@@ -9,6 +9,24 @@
 
 Database menggunakan Supabase lokal.
 
+### Setup Supabase Lokal Terpisah
+
+Project ini sudah disiapkan untuk Supabase local yang terpisah dari project lain. Konfigurasi ada di folder `supabase/` dengan port yang tidak bentrok:
+
+- API: `54329`
+- Database: `54330`
+- Studio: `54331`
+- Inbucket: `54332`
+
+Langkah cepat:
+
+1. Install Supabase CLI.
+2. Jalankan `supabase start` dari root project ini.
+3. Isi `.env` dari `.env.example`.
+4. Gunakan `VITE_SUPABASE_URL` dan `VITE_SUPABASE_ANON_KEY` untuk frontend.
+
+Jika ada project Supabase local lain yang sedang aktif, biarkan tetap berjalan karena project ini memakai port berbeda.
+
 ---
 
 ## Daftar Isi
