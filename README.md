@@ -495,12 +495,12 @@ Operator Skill Level >= Minimum Skill Requirement
 | Line ID | FK |
 | Workstation Name | VARCHAR |
 | Sequence | INTEGER |
-| Minimum Skill | INTEGER (1–4) |
+| Minimum Skill | INTEGER (1–4) DEFAULT 2 |
 | Ideal Cycle Time | DECIMAL (detik) |
 
 ### 11.1 Setup Skill Requirement per Workstation
 
-Setiap workstation harus didefinisikan dengan `Minimum Skill` yang diperlukan agar sistem dapat otomatis memvalidasi operator saat assignment. Berikut panduan dan contoh format yang direkomendasikan:
+Setiap workstation harus didefinisikan dengan `Minimum Skill` yang diperlukan agar sistem dapat otomatis memvalidasi operator saat assignment. Jika tidak dispesifikasikan, nilai default `Minimum Skill` untuk workstation baru adalah level **2**. Berikut panduan dan contoh format yang direkomendasikan:
 
 | Field | Keterangan |
 |-------|-----------|
