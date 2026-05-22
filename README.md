@@ -218,6 +218,25 @@ Section 1
     |   └── Group A
     |   └── Group B
     |   └── Group C
+    ### Line Manajemen Struktur
+
+    ```
+    Section 1
+        └── Group CCU
+            └── Workstation CCU 1
+            └── Workstation CCU 2
+            └── Workstation CCU 3
+            └── Workstation CCU 4
+            └── Workstation CCU 5
+            └── Workstation CCU 6
+
+        └── Group USB Charger
+            └── Workstation USB 1
+            └── Workstation USB 2
+            └── Workstation USB 3
+            └── Workstation USB 4
+    ```
+
 ```
 
 
@@ -369,7 +388,13 @@ Line Preparation
     ↓
 Manpower Validation
     ↓
-Production Start
+Check Autonomous Maintenance
+    ↓
+Inspection 5 First Product
+    ↓
+Production Start (Input by per Hour)
+    ↓
+Inspection 5 Last Product
 ```
 
 ---
