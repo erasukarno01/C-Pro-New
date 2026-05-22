@@ -1,10 +1,16 @@
 import { createRootRoute, createRoute, createRouter as createTanStackRouter } from "@tanstack/react-router";
 import { LayoutDashboard, Home, Box, Users, Settings, ChevronLeft, ChevronRight, Sun, Moon, Eye, EyeOff, Loader2 } from "lucide-react";
 import { Outlet, Link, redirect } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { useTheme } from "./theme";
-import { getAssignmentPreview, getManpowerSuggestionPreview, getWorkforceDashboardMetricsPreview } from "@/lib/workforce";
+import {
+  fetchWorkforceAnalyticsSnapshot,
+  getAssignmentPreview,
+  getManpowerSuggestionPreview,
+  getWorkforceDashboardMetricsPreview,
+  type WorkforceAnalyticsSnapshot,
+} from "@/lib/workforce";
 
 // Root Route
 export const rootRoute = createRootRoute({
@@ -401,9 +407,39 @@ export const dashboardIndexRoute = createRoute({
 });
 
 function DashboardIndex() {
+  const [analytics, setAnalytics] = useState<WorkforceAnalyticsSnapshot>({
+    source: "preview",
+    suggestion: getManpowerSuggestionPreview(),
+    metrics: getWorkforceDashboardMetricsPreview(),
+  });
   const assignmentPreview = getAssignmentPreview();
-  const manpowerSuggestion = getManpowerSuggestionPreview();
-  const workforceMetrics = getWorkforceDashboardMetricsPreview();
+
+  useEffect(() => {
+    let cancelled = false;
+
+    fetchWorkforceAnalyticsSnapshot()
+      .then((snapshot) => {
+        if (!cancelled) {
+          setAnalytics(snapshot);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setAnalytics({
+            source: "preview",
+            suggestion: getManpowerSuggestionPreview(),
+            metrics: getWorkforceDashboardMetricsPreview(),
+          });
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const manpowerSuggestion = analytics.suggestion;
+  const workforceMetrics = analytics.metrics;
 
   return (
     <div className="space-y-6">
@@ -524,6 +560,7 @@ function DashboardIndex() {
           <div>
             <h3 className="font-semibold text-foreground">Auto-Suggest Manpower for WO</h3>
             <p className="text-sm text-muted-foreground">Rekomendasi operator eligible untuk WO berdasarkan skill, status aktif, dan kebutuhan headcount.</p>
+            <p className="text-xs text-muted-foreground mt-1">Source data: {analytics.source === "supabase" ? "Supabase real data" : "Fallback preview"}</p>
           </div>
           <span className={cn(
             "px-3 py-1 rounded-full text-xs font-semibold border",

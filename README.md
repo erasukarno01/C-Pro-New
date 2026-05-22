@@ -745,6 +745,52 @@ System behavior:
 - Saat WO dibuat, sistem membaca `workstation_skill_requirements` dan `workstation_defaults` untuk memvalidasi apakah assigned operator memenuhi persyaratan skill dan untuk menghitung kebutuhan manpower.
 - Jika manpower shortage, sistem memicu rekomendasi: internal delegation, transfer, atau request tambahan.
 
+### 11.3 Training, Assessment, dan Audit Log
+
+Untuk menjaga Skill Matrix tetap akurat, sistem perlu memiliki siklus training, assessment, dan audit log yang terstruktur.
+
+#### Training Flow
+
+1. Supervisor atau Leader membuat request training untuk operator yang membutuhkan peningkatan skill.
+2. Training dijalankan per skill atau per workstation tertentu.
+3. Setelah training selesai, PIC mengisi hasil training dan bukti dokumentasi.
+4. Operator masuk ke tahap assessment untuk validasi skill level.
+
+#### Skill Assessment Flow
+
+| Tahap | Deskripsi |
+|-------|-----------|
+| Request | Permintaan peningkatan skill dibuat oleh atasan atau HR |
+| Training | Operator menerima pelatihan / mentoring |
+| Assessment | Skill diuji dan level diperbarui jika lolos |
+| Certification | Jika lolos, sertifikat / status kompetensi diperbarui |
+| Expiry Review | Sistem memantau masa berlaku sertifikasi bila ada |
+
+#### Rekomendasi Struktur Tabel
+
+| Tabel | Fungsi |
+|-------|--------|
+| `operator_training_sessions` | Menyimpan jadwal, PIC, skill target, dan status training |
+| `operator_training_participants` | Menyimpan operator yang ikut training |
+| `operator_skill_assessments` | Menyimpan hasil assessment skill per operator |
+| `operator_skill_changes` | Audit perubahan level skill, siapa yang mengubah, dan alasannya |
+
+#### Contoh Field Penting
+
+| Tabel | Field Penting |
+|-------|---------------|
+| `operator_training_sessions` | `id`, `skill_id`, `workstation_id`, `trainer_id`, `scheduled_at`, `status`, `notes` |
+| `operator_training_participants` | `session_id`, `operator_id`, `attendance_status`, `remarks` |
+| `operator_skill_assessments` | `operator_id`, `skill_id`, `assessed_level`, `assessed_by`, `assessed_at`, `result`, `evidence_url` |
+| `operator_skill_changes` | `operator_id`, `skill_id`, `old_level`, `new_level`, `changed_by`, `changed_at`, `reason` |
+
+#### Audit Log Policy
+
+- Setiap perubahan level skill harus punya jejak `who`, `when`, `what changed`, dan `why`.
+- Jika assessment gagal, hasil tetap dicatat agar histori kompetensi lengkap.
+- Audit log tidak boleh dihapus secara manual tanpa otorisasi admin.
+- Data audit berguna untuk evaluasi training effectiveness, compliance, dan internal review.
+
 ---
 
 ---

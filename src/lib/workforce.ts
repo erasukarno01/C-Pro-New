@@ -1,3 +1,5 @@
+import { supabase } from "./supabase";
+
 export type AssignmentDecision = "eligible" | "needs-review" | "not-eligible";
 
 export type OperatorSkill = {
@@ -67,6 +69,7 @@ export type WorkstationCoverageSnapshot = {
   workstationId: string;
   workstationName: string;
   requiredHeadcount: number;
+  assignedHeadcount: number;
   eligibleHeadcount: number;
   shortage: number;
   coverageRate: number;
@@ -80,6 +83,12 @@ export type WorkforceDashboardMetrics = {
   shortageHeadcount: number;
   averageCoverageRate: number;
   snapshots: WorkstationCoverageSnapshot[];
+};
+
+export type WorkforceAnalyticsSnapshot = {
+  source: "supabase" | "preview";
+  suggestion: ManpowerSuggestion;
+  metrics: WorkforceDashboardMetrics;
 };
 
 export function validateOperatorAssignment(
@@ -294,6 +303,7 @@ export function getWorkforceDashboardMetricsPreview(): WorkforceDashboardMetrics
         ],
       },
       requiredHeadcount: 2,
+      assignedHeadcount: 2,
       eligibleOperators: [
         {
           operatorId: "OP-001",
@@ -323,6 +333,7 @@ export function getWorkforceDashboardMetricsPreview(): WorkforceDashboardMetrics
         ],
       },
       requiredHeadcount: 2,
+      assignedHeadcount: 1,
       eligibleOperators: [
         {
           operatorId: "OP-003",
@@ -341,6 +352,7 @@ export function getWorkforceDashboardMetricsPreview(): WorkforceDashboardMetrics
         ],
       },
       requiredHeadcount: 1,
+      assignedHeadcount: 1,
       eligibleOperators: [
         {
           operatorId: "OP-004",
@@ -351,13 +363,14 @@ export function getWorkforceDashboardMetricsPreview(): WorkforceDashboardMetrics
     },
   ];
 
-  const snapshots = workstationSnapshots.map(({ workstation, requiredHeadcount, eligibleOperators }) => {
+  const snapshots = workstationSnapshots.map(({ workstation, requiredHeadcount, assignedHeadcount, eligibleOperators }) => {
     const eligibleCount = eligibleOperators.filter((operator) => validateOperatorAssignment(operator, workstation).eligible).length;
-    const shortage = Math.max(requiredHeadcount - eligibleCount, 0);
+    const shortage = Math.max(requiredHeadcount - assignedHeadcount, 0);
     return {
       workstationId: workstation.workstationId,
       workstationName: workstation.workstationName ?? workstation.workstationId,
       requiredHeadcount,
+      assignedHeadcount,
       eligibleHeadcount: eligibleCount,
       shortage,
       coverageRate: requiredHeadcount === 0 ? 100 : Math.min((eligibleCount / requiredHeadcount) * 100, 100),
@@ -378,5 +391,178 @@ export function getWorkforceDashboardMetricsPreview(): WorkforceDashboardMetrics
     shortageHeadcount,
     averageCoverageRate,
     snapshots,
+  };
+}
+
+type SupabaseOperatorRow = {
+  id: string;
+  nik: string;
+  name: string;
+  active: boolean;
+  operator_skills: Array<{
+    skill_id: string | null;
+    level: number;
+    assessed_at?: string | null;
+    certified_until?: string | null;
+  }>;
+};
+
+type SupabaseWorkstationRow = {
+  id: string;
+  name: string;
+  sequence: number;
+  minimum_skill: number;
+  active: boolean;
+  workstation_skill_requirements: Array<{
+    skill_id: string | null;
+    minimum_level: number;
+    required: boolean;
+  }>;
+  workstation_defaults: Array<{
+    default_headcount: number;
+    default_role: string;
+    shift_type: string | null;
+  }>;
+};
+
+type SupabaseAssignmentRow = {
+  workstation_id: string;
+  operator_id: string;
+  active: boolean;
+};
+
+function getAssignedHeadcount(workstationId: string, assignments: SupabaseAssignmentRow[]): number {
+  return assignments.filter((assignment) => assignment.workstation_id === workstationId && assignment.active).length;
+}
+
+function selectWorkstationDefaultHeadcount(workstation: SupabaseWorkstationRow): number {
+  const defaultConfig = workstation.workstation_defaults[0];
+  return defaultConfig?.default_headcount ?? 1;
+}
+
+function toWorkstationContext(workstation: SupabaseWorkstationRow): WorkstationContext {
+  return {
+    workstationId: workstation.id,
+    workstationName: workstation.name,
+    minimumSkill: workstation.minimum_skill,
+    requirements: workstation.workstation_skill_requirements.map((requirement) => ({
+      skillId: requirement.skill_id ?? undefined,
+      minimumLevel: requirement.minimum_level,
+      required: requirement.required,
+    })),
+  };
+}
+
+export async function fetchWorkforceAnalyticsSnapshot(): Promise<WorkforceAnalyticsSnapshot> {
+  if (!supabase) {
+    return {
+      source: "preview",
+      suggestion: getManpowerSuggestionPreview(),
+      metrics: getWorkforceDashboardMetricsPreview(),
+    };
+  }
+
+  const [workstationsResult, operatorsResult, assignmentsResult] = await Promise.all([
+    supabase
+      .from("workstations")
+      .select("id,name,sequence,minimum_skill,active,workstation_skill_requirements(skill_id,minimum_level,required),workstation_defaults(default_headcount,default_role,shift_type)")
+      .eq("active", true)
+      .order("sequence", { ascending: true }),
+    supabase
+      .from("operators")
+      .select("id,nik,name,active,operator_skills(skill_id,level,assessed_at,certified_until)")
+      .eq("active", true)
+      .order("name", { ascending: true }),
+    supabase
+      .from("manpower_assignments")
+      .select("workstation_id,operator_id,active")
+      .eq("active", true),
+  ]);
+
+  if (workstationsResult.error || operatorsResult.error || assignmentsResult.error) {
+    return {
+      source: "preview",
+      suggestion: getManpowerSuggestionPreview(),
+      metrics: getWorkforceDashboardMetricsPreview(),
+    };
+  }
+
+  const workstations = (workstationsResult.data ?? []) as SupabaseWorkstationRow[];
+  const operators = (operatorsResult.data ?? []) as SupabaseOperatorRow[];
+  const assignments = (assignmentsResult.data ?? []) as SupabaseAssignmentRow[];
+
+  if (workstations.length === 0 || operators.length === 0) {
+    return {
+      source: "preview",
+      suggestion: getManpowerSuggestionPreview(),
+      metrics: getWorkforceDashboardMetricsPreview(),
+    };
+  }
+
+  const workstationContexts = workstations.map(toWorkstationContext);
+  const snapshots = workstationContexts.map((workstation) => {
+    const matchingRow = workstations.find((row) => row.id === workstation.workstationId);
+    const requiredHeadcount = matchingRow ? selectWorkstationDefaultHeadcount(matchingRow) : 1;
+    const eligibleHeadcount = operators.filter((operator) => validateOperatorAssignment(operator, workstation).eligible).length;
+    const assignedHeadcount = getAssignedHeadcount(workstation.workstationId, assignments);
+    const shortage = Math.max(requiredHeadcount - assignedHeadcount, 0);
+
+    return {
+      workstationId: workstation.workstationId,
+      workstationName: workstation.workstationName ?? workstation.workstationId,
+      requiredHeadcount,
+      assignedHeadcount,
+      eligibleHeadcount,
+      shortage,
+      coverageRate: requiredHeadcount === 0 ? 100 : Math.min((eligibleHeadcount / requiredHeadcount) * 100, 100),
+    };
+  });
+
+  const targetSnapshot = [...snapshots].sort((left, right) => {
+    if (right.shortage !== left.shortage) {
+      return right.shortage - left.shortage;
+    }
+
+    return right.coverageRate - left.coverageRate;
+  })[0];
+
+  const targetWorkstation = workstationContexts.find((workstation) => workstation.workstationId === targetSnapshot.workstationId) ?? workstationContexts[0];
+  const recommendation = suggestManpowerForWorkOrder(
+    {
+      workOrderId: `WO-${targetWorkstation.workstationId}`,
+      workOrderCode: `WO-${targetWorkstation.workstationId}`,
+      workstation: targetWorkstation,
+      requiredHeadcount: targetSnapshot.requiredHeadcount,
+    },
+    operators.map((operator) => ({
+      operatorId: operator.id,
+      active: operator.active,
+      skills: operator.operator_skills.map((skill) => ({
+        skillId: skill.skill_id ?? "",
+        level: skill.level,
+        assessedAt: skill.assessed_at ?? undefined,
+        certifiedUntil: skill.certified_until ?? undefined,
+      })),
+    })),
+  );
+
+  const totalWorkstations = snapshots.length;
+  const coveredWorkstations = snapshots.filter((snapshot) => snapshot.shortage === 0).length;
+  const shortageCount = snapshots.filter((snapshot) => snapshot.shortage > 0).length;
+  const shortageHeadcount = snapshots.reduce((total, snapshot) => total + snapshot.shortage, 0);
+  const averageCoverageRate = snapshots.reduce((total, snapshot) => total + snapshot.coverageRate, 0) / totalWorkstations;
+
+  return {
+    source: "supabase",
+    suggestion: recommendation,
+    metrics: {
+      totalWorkstations,
+      coveredWorkstations,
+      coverageRate: (coveredWorkstations / totalWorkstations) * 100,
+      shortageCount,
+      shortageHeadcount,
+      averageCoverageRate,
+      snapshots,
+    },
   };
 }
