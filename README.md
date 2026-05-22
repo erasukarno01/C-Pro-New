@@ -199,6 +199,46 @@ Setiap line produksi memiliki group:
 | Group A |
 | Group B |
 | Group C |
+
+### Relasi Line -> Group -> Workstation -> Operator
+
+Struktur operasional di project ini mengikuti hirarki berikut:
+
+```mermaid
+flowchart TB
+    L[Line Production] --> G[Group]
+    G --> W[Workstation]
+    W --> O[Operator]
+
+    L ---|1 line memiliki banyak group| G
+    G ---|1 group memiliki banyak workstation| W
+    W ---|1 workstation diisi beberapa operator per shift| O
+```
+
+Skema tabel database yang direkomendasikan:
+
+| Level | Tabel | Relasi Utama |
+|-------|-------|--------------|
+| Line Production | `lines` | `lines.id` direferensikan oleh `workstations.line_id` |
+| Group | `production_groups` | Mengelompokkan line atau section produksi |
+| Workstation | `workstations` | `workstations.line_id` → `lines.id` |
+| Operator | `operators` | Di-assign ke workstation melalui `manpower_assignments` |
+
+Hubungan assignment operasional:
+
+| From | To | Tabel Penghubung | Catatan |
+|------|----|------------------|---------|
+| Line | Group | `production_groups` | Satu line dapat punya banyak group produksi |
+| Group | Workstation | `workstations` | Workstation berada di dalam group/section tertentu |
+| Workstation | Operator | `manpower_assignments` | Satu workstation dapat diisi beberapa operator per shift |
+
+Contoh alur bisnis:
+
+1. WO dibuat untuk sebuah line.
+2. Sistem menentukan group dan daftar workstation yang terlibat.
+3. Sistem membaca skill requirement tiap workstation.
+4. Operator yang eligible di-assign ke workstation melalui `manpower_assignments`.
+5. Jika ada shortage, sistem memicu rekomendasi manpower atau delegasi.
 ---
 
 ### Detail Section 1
