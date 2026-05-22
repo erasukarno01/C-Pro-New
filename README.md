@@ -498,6 +498,56 @@ Operator Skill Level >= Minimum Skill Requirement
 | Minimum Skill | INTEGER (1–4) |
 | Ideal Cycle Time | DECIMAL (detik) |
 
+### 11.1 Setup Skill Requirement per Workstation
+
+Setiap workstation harus didefinisikan dengan `Minimum Skill` yang diperlukan agar sistem dapat otomatis memvalidasi operator saat assignment. Berikut panduan dan contoh format yang direkomendasikan:
+
+| Field | Keterangan |
+|-------|-----------|
+| Workstation ID | UUID / kode unik workstation |
+| Line ID | FK → lines.id |
+| Group Name | Nama group produksi (mis. Group A) |
+| Workstation Name | Nama workstation |
+| Minimum Skill | Level minimal (1–4) |
+| Notes | Catatan tambahan (tool khusus, sertifikasi) |
+
+Contoh:
+
+| Workstation ID | Line | Group | Workstation Name | Minimum Skill | Notes |
+|---------------:|------|-------|------------------|---------------:|-------|
+| WS-CCU-01 | Section 1 - CCU | Group A | Workstation CCU 1 | 2 | Standard assembly |
+| WS-CCU-02 | Section 1 - CCU | Group A | Workstation CCU 2 | 3 | Requires soldering skill |
+
+Implementasi tipikal: data ini disimpan di tabel `workstation_skill_requirements` dan digunakan dalam validasi assignment operator.
+
+### 11.2 Mapping Default Manpower per Workstation
+
+Setiap workstation juga perlu memiliki konfigurasi default manpower (jumlah operator dan peran default) per shift. Ini mempermudah auto-assignment saat WO dibuat.
+
+| Field | Keterangan |
+|-------|-----------|
+| Workstation ID | FK → workstations.id |
+| Line ID | FK → lines.id |
+| Group Name | Nama group produksi |
+| Default Headcount | Integer (jumlah operator default) |
+| Default Role | Peran default (Operator / Sub Leader / Specialist) |
+| Shift Type | Optional: non-shift / 2-shift / 3-shift |
+| Notes | Keterangan tambahan |
+
+Contoh mapping per group:
+
+| Line | Group | Workstation | Default Headcount | Default Role |
+|------|-------|------------|------------------:|--------------|
+| Section 1 - CCU | Group A | Workstation CCU 1 | 1 | Operator |
+| Section 1 - CCU | Group A | Workstation CCU 2 | 1 | Operator |
+| Section 1 - USB | Group B | Workstation USB 1 | 1 | Operator |
+
+System behavior:
+- Saat WO dibuat, sistem membaca `workstation_skill_requirements` dan `workstation_defaults` untuk memvalidasi apakah assigned operator memenuhi persyaratan skill dan untuk menghitung kebutuhan manpower.
+- Jika manpower shortage, sistem memicu rekomendasi: internal delegation, transfer, atau request tambahan.
+
+---
+
 ---
 
 ## 12. Manajemen Tenaga Kerja Dinamis
