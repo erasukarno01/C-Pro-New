@@ -110,7 +110,6 @@ Smart Manufacturing MES
 
 Sistem menggunakan teknologi realtime berikut:
 
-- **Supabase Realtime** — sinkronisasi data realtime
 - **WebSocket** — koneksi bidireksional persisten
 - **Push Notification** — notifikasi instan ke device
 
@@ -133,13 +132,11 @@ Manager
      └── Supervisor
          └── Leader
              └── Sub Leader
-                 └── Operator
 ```
 
 ### Role Permission Matrix
 
 | Role | Access Level | Deskripsi |
-|------|-------------|-----------|
 | Super Admin | Akses penuh sistem | Akses penuh ke seluruh sistem |
 | Manager | Semua assistant manager & lini | Monitoring semua assistant manager dan lini |
 | Assistant Manager | Semua supervisor, leader, dan lini | Monitoring semua supervisor, leader, dan lini |
@@ -155,7 +152,6 @@ Manager
 ### Struktur Kategori Produksi
 
 PT Chao Long Motor Parts Indonesia memiliki struktur produksi sebagai berikut:
-
 **Production Categories:**
 
 | Category | Deskripsi |
@@ -163,23 +159,15 @@ PT Chao Long Motor Parts Indonesia memiliki struktur produksi sebagai berikut:
 | SMT | Surface Mount Technology |
 | Section 1 | CCU, USB Charger and Meter Assy |
 | Section 2 | Speedometer, and Sensor |
-| DPP | Dial Plate Printing |
-
 **Product Categories:**
 
 | Product Category | Deskripsi |
 |-----------------|-----------|
 | PCBA | Printed Circuit Board Assembly |
 | Sub Assy | Sub Assembly products |
-| Finished Good | Produk jadi siap kirim |
-
-**Finished Good Classification:**
 
 | Finished Good Type |
 |--------------------|
-| CCU |
-| USB |
-| Speedometer |
 | Meter Assy |
 | Sensor |
 | Others |
@@ -193,20 +181,13 @@ Setiap line produksi memiliki group:
 | Group A |
 | Group B |
 | Group C |
-| Group D |
-| Group E |
-
 ---
 
 ### Detail Section 1
-
-```
 Section 1
        └── Line CCU 1
     |   └── Group A
-    |   └── Group B
     |   └── Group C
-       └── Line CCU 2
     |   └── Group A
     |   └── Group B
     |   └── Group C
