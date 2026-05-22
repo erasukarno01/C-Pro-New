@@ -15,6 +15,7 @@ export type WorkstationSkillRequirement = {
 
 export type WorkstationContext = {
   workstationId: string;
+  workstationName?: string;
   minimumSkill: number;
   requirements: WorkstationSkillRequirement[];
 };
@@ -31,6 +32,54 @@ export type AssignmentValidationResult = {
   reasons: string[];
   matchedRequirements: string[];
   missingRequirements: string[];
+};
+
+export type WorkOrderDemand = {
+  workOrderId: string;
+  workOrderCode: string;
+  workstation: WorkstationContext;
+  requiredHeadcount: number;
+};
+
+export type OperatorRecommendation = {
+  operatorId: string;
+  score: number;
+  decision: AssignmentDecision;
+  matchedRequirements: string[];
+  missingRequirements: string[];
+  reasons: string[];
+};
+
+export type ManpowerSuggestion = {
+  workOrderId: string;
+  workOrderCode: string;
+  workstationId: string;
+  workstationName: string;
+  requiredHeadcount: number;
+  eligibleHeadcount: number;
+  shortage: number;
+  coverageRate: number;
+  recommendations: OperatorRecommendation[];
+  status: "covered" | "partial" | "shortage";
+};
+
+export type WorkstationCoverageSnapshot = {
+  workstationId: string;
+  workstationName: string;
+  requiredHeadcount: number;
+  eligibleHeadcount: number;
+  shortage: number;
+  coverageRate: number;
+};
+
+export type WorkforceDashboardMetrics = {
+  totalWorkstations: number;
+  coveredWorkstations: number;
+  coverageRate: number;
+  shortageCount: number;
+  shortageHeadcount: number;
+  averageCoverageRate: number;
+  snapshots: WorkstationCoverageSnapshot[];
 };
 
 export function validateOperatorAssignment(
@@ -122,4 +171,212 @@ export function getAssignmentPreview() {
   };
 
   return validateOperatorAssignment(operator, workstation);
+}
+
+function scoreOperatorForWorkstation(
+  operator: OperatorContext,
+  workstation: WorkstationContext,
+): OperatorRecommendation {
+  const validation = validateOperatorAssignment(operator, workstation);
+  const matchedBonus = validation.matchedRequirements.length * 10;
+  const skillScore = operator.skills.reduce((total, skill) => total + skill.level, 0);
+  const completenessPenalty = validation.missingRequirements.length * 15;
+
+  return {
+    operatorId: operator.operatorId,
+    score: skillScore + matchedBonus - completenessPenalty + (operator.active === false ? -100 : 0),
+    decision: validation.decision,
+    matchedRequirements: validation.matchedRequirements,
+    missingRequirements: validation.missingRequirements,
+    reasons: validation.reasons,
+  };
+}
+
+export function suggestManpowerForWorkOrder(
+  demand: WorkOrderDemand,
+  operators: OperatorContext[],
+): ManpowerSuggestion {
+  const scoredOperators = operators
+    .map((operator) => ({ operator, recommendation: scoreOperatorForWorkstation(operator, demand.workstation) }))
+    .sort((left, right) => right.recommendation.score - left.recommendation.score);
+
+  const eligibleRecommendations = scoredOperators
+    .filter(({ recommendation }) => recommendation.decision === "eligible")
+    .map(({ recommendation }) => recommendation);
+
+  const recommendedOperators = scoredOperators
+    .filter(({ recommendation }) => recommendation.decision === "eligible" || recommendation.decision === "needs-review")
+    .slice(0, demand.requiredHeadcount)
+    .map(({ recommendation }) => recommendation);
+
+  const eligibleHeadcount = eligibleRecommendations.length;
+  const shortage = Math.max(demand.requiredHeadcount - eligibleHeadcount, 0);
+  const coverageRate = demand.requiredHeadcount === 0 ? 100 : Math.min((eligibleHeadcount / demand.requiredHeadcount) * 100, 100);
+
+  return {
+    workOrderId: demand.workOrderId,
+    workOrderCode: demand.workOrderCode,
+    workstationId: demand.workstation.workstationId,
+    workstationName: demand.workstation.workstationName ?? demand.workstation.workstationId,
+    requiredHeadcount: demand.requiredHeadcount,
+    eligibleHeadcount,
+    shortage,
+    coverageRate,
+    recommendations: recommendedOperators,
+    status: shortage === 0 ? "covered" : eligibleHeadcount > 0 ? "partial" : "shortage",
+  };
+}
+
+export function getManpowerSuggestionPreview() {
+  const demand: WorkOrderDemand = {
+    workOrderId: "WO-001",
+    workOrderCode: "WO-CCU-2401",
+    requiredHeadcount: 2,
+    workstation: {
+      workstationId: "WS-CCU-01",
+      workstationName: "Workstation CCU 1",
+      minimumSkill: 2,
+      requirements: [
+        { skillId: "SOLDER", minimumLevel: 2, required: true },
+        { skillId: "INSPECT", minimumLevel: 2, required: true },
+      ],
+    },
+  };
+
+  const operators: OperatorContext[] = [
+    {
+      operatorId: "OP-001",
+      active: true,
+      skills: [
+        { skillId: "SOLDER", level: 3 },
+        { skillId: "INSPECT", level: 2 },
+      ],
+    },
+    {
+      operatorId: "OP-002",
+      active: true,
+      skills: [
+        { skillId: "SOLDER", level: 2 },
+        { skillId: "INSPECT", level: 1 },
+      ],
+    },
+    {
+      operatorId: "OP-003",
+      active: true,
+      skills: [
+        { skillId: "SOLDER", level: 1 },
+        { skillId: "INSPECT", level: 2 },
+      ],
+    },
+    {
+      operatorId: "OP-004",
+      active: false,
+      skills: [
+        { skillId: "SOLDER", level: 4 },
+        { skillId: "INSPECT", level: 4 },
+      ],
+    },
+  ];
+
+  return suggestManpowerForWorkOrder(demand, operators);
+}
+
+export function getWorkforceDashboardMetricsPreview(): WorkforceDashboardMetrics {
+  const workstationSnapshots: Array<{ workstation: WorkstationContext; requiredHeadcount: number; eligibleOperators: OperatorContext[] }> = [
+    {
+      workstation: {
+        workstationId: "WS-CCU-01",
+        workstationName: "Workstation CCU 1",
+        minimumSkill: 2,
+        requirements: [
+          { skillId: "SOLDER", minimumLevel: 2, required: true },
+          { skillId: "INSPECT", minimumLevel: 2, required: true },
+        ],
+      },
+      requiredHeadcount: 2,
+      eligibleOperators: [
+        {
+          operatorId: "OP-001",
+          active: true,
+          skills: [
+            { skillId: "SOLDER", level: 3 },
+            { skillId: "INSPECT", level: 2 },
+          ],
+        },
+        {
+          operatorId: "OP-002",
+          active: true,
+          skills: [
+            { skillId: "SOLDER", level: 2 },
+            { skillId: "INSPECT", level: 2 },
+          ],
+        },
+      ],
+    },
+    {
+      workstation: {
+        workstationId: "WS-CCU-02",
+        workstationName: "Workstation CCU 2",
+        minimumSkill: 2,
+        requirements: [
+          { skillId: "SOLDER", minimumLevel: 2, required: true },
+        ],
+      },
+      requiredHeadcount: 2,
+      eligibleOperators: [
+        {
+          operatorId: "OP-003",
+          active: true,
+          skills: [{ skillId: "SOLDER", level: 2 }],
+        },
+      ],
+    },
+    {
+      workstation: {
+        workstationId: "WS-USB-01",
+        workstationName: "Workstation USB 1",
+        minimumSkill: 2,
+        requirements: [
+          { skillId: "ASSEMBLY", minimumLevel: 2, required: true },
+        ],
+      },
+      requiredHeadcount: 1,
+      eligibleOperators: [
+        {
+          operatorId: "OP-004",
+          active: true,
+          skills: [{ skillId: "ASSEMBLY", level: 3 }],
+        },
+      ],
+    },
+  ];
+
+  const snapshots = workstationSnapshots.map(({ workstation, requiredHeadcount, eligibleOperators }) => {
+    const eligibleCount = eligibleOperators.filter((operator) => validateOperatorAssignment(operator, workstation).eligible).length;
+    const shortage = Math.max(requiredHeadcount - eligibleCount, 0);
+    return {
+      workstationId: workstation.workstationId,
+      workstationName: workstation.workstationName ?? workstation.workstationId,
+      requiredHeadcount,
+      eligibleHeadcount: eligibleCount,
+      shortage,
+      coverageRate: requiredHeadcount === 0 ? 100 : Math.min((eligibleCount / requiredHeadcount) * 100, 100),
+    };
+  });
+
+  const totalWorkstations = snapshots.length;
+  const coveredWorkstations = snapshots.filter((snapshot) => snapshot.shortage === 0).length;
+  const shortageCount = snapshots.filter((snapshot) => snapshot.shortage > 0).length;
+  const shortageHeadcount = snapshots.reduce((total, snapshot) => total + snapshot.shortage, 0);
+  const averageCoverageRate = snapshots.reduce((total, snapshot) => total + snapshot.coverageRate, 0) / totalWorkstations;
+
+  return {
+    totalWorkstations,
+    coveredWorkstations,
+    coverageRate: (coveredWorkstations / totalWorkstations) * 100,
+    shortageCount,
+    shortageHeadcount,
+    averageCoverageRate,
+    snapshots,
+  };
 }

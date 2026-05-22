@@ -4,7 +4,7 @@ import { Outlet, Link, redirect } from "@tanstack/react-router";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { useTheme } from "./theme";
-import { getAssignmentPreview } from "@/lib/workforce";
+import { getAssignmentPreview, getManpowerSuggestionPreview, getWorkforceDashboardMetricsPreview } from "@/lib/workforce";
 
 // Root Route
 export const rootRoute = createRootRoute({
@@ -402,6 +402,8 @@ export const dashboardIndexRoute = createRoute({
 
 function DashboardIndex() {
   const assignmentPreview = getAssignmentPreview();
+  const manpowerSuggestion = getManpowerSuggestionPreview();
+  const workforceMetrics = getWorkforceDashboardMetricsPreview();
 
   return (
     <div className="space-y-6">
@@ -513,6 +515,133 @@ function DashboardIndex() {
               <p className="text-sm text-muted-foreground">Tidak ada requirement yang hilang.</p>
             )}
           </div>
+        </div>
+      </div>
+
+      {/* Auto Suggest Manpower */}
+      <div className="modern-card p-6 border border-border/60">
+        <div className="flex items-center justify-between gap-4 mb-4">
+          <div>
+            <h3 className="font-semibold text-foreground">Auto-Suggest Manpower for WO</h3>
+            <p className="text-sm text-muted-foreground">Rekomendasi operator eligible untuk WO berdasarkan skill, status aktif, dan kebutuhan headcount.</p>
+          </div>
+          <span className={cn(
+            "px-3 py-1 rounded-full text-xs font-semibold border",
+            manpowerSuggestion.status === "covered"
+              ? "bg-green-500/10 text-green-700 border-green-200"
+              : manpowerSuggestion.status === "partial"
+                ? "bg-yellow-500/10 text-yellow-700 border-yellow-200"
+                : "bg-red-500/10 text-red-700 border-red-200",
+          )}>
+            {manpowerSuggestion.status}
+          </span>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-4">
+          <div className="rounded-lg border border-border p-4 bg-background/50">
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">WO Code</p>
+            <p className="mt-2 text-lg font-bold text-foreground">{manpowerSuggestion.workOrderCode}</p>
+          </div>
+          <div className="rounded-lg border border-border p-4 bg-background/50">
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">Required Headcount</p>
+            <p className="mt-2 text-2xl font-bold text-foreground">{manpowerSuggestion.requiredHeadcount}</p>
+          </div>
+          <div className="rounded-lg border border-border p-4 bg-background/50">
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">Eligible Headcount</p>
+            <p className="mt-2 text-2xl font-bold text-foreground">{manpowerSuggestion.eligibleHeadcount}</p>
+          </div>
+          <div className="rounded-lg border border-border p-4 bg-background/50">
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">Shortage</p>
+            <p className="mt-2 text-2xl font-bold text-foreground">{manpowerSuggestion.shortage}</p>
+          </div>
+        </div>
+
+        <div className="mt-4 grid gap-4 md:grid-cols-2">
+          <div className="rounded-lg border border-border p-4 bg-background/50">
+            <p className="text-sm font-semibold text-foreground mb-2">Recommended Operators</p>
+            <ul className="space-y-3 text-sm text-muted-foreground">
+              {manpowerSuggestion.recommendations.map((recommendation) => (
+                <li key={recommendation.operatorId} className="flex items-center justify-between gap-3 rounded-md border border-border px-3 py-2">
+                  <div>
+                    <p className="font-medium text-foreground">{recommendation.operatorId}</p>
+                    <p className="text-xs text-muted-foreground">Matched {recommendation.matchedRequirements.length} requirement(s)</p>
+                  </div>
+                  <span className={cn(
+                    "px-2 py-1 rounded-full text-xs font-semibold border",
+                    recommendation.decision === "eligible"
+                      ? "bg-green-500/10 text-green-700 border-green-200"
+                      : recommendation.decision === "needs-review"
+                        ? "bg-yellow-500/10 text-yellow-700 border-yellow-200"
+                        : "bg-red-500/10 text-red-700 border-red-200",
+                  )}>
+                    {recommendation.decision}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div className="rounded-lg border border-border p-4 bg-background/50">
+            <p className="text-sm font-semibold text-foreground mb-2">Suggestion Notes</p>
+            <ul className="space-y-2 text-sm text-muted-foreground list-disc pl-5">
+              <li>Eligible operator diprioritaskan lebih dulu.</li>
+              <li>Jika headcount masih kurang, sistem menandai shortage untuk review.</li>
+              <li>Data preview ini bisa diganti dengan data Supabase real saat workflow assignment dihubungkan.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      {/* Coverage & Shortage Metrics */}
+      <div className="modern-card p-6 border border-border/60">
+        <div className="flex items-center justify-between gap-4 mb-4">
+          <div>
+            <h3 className="font-semibold text-foreground">Coverage & Shortage Metrics</h3>
+            <p className="text-sm text-muted-foreground">Ringkasan coverage manpower per workstation.</p>
+          </div>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-4">
+          <div className="rounded-lg border border-border p-4 bg-background/50">
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">Coverage Rate</p>
+            <p className="mt-2 text-2xl font-bold text-foreground">{workforceMetrics.coverageRate.toFixed(0)}%</p>
+          </div>
+          <div className="rounded-lg border border-border p-4 bg-background/50">
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">Covered Workstations</p>
+            <p className="mt-2 text-2xl font-bold text-foreground">{workforceMetrics.coveredWorkstations}/{workforceMetrics.totalWorkstations}</p>
+          </div>
+          <div className="rounded-lg border border-border p-4 bg-background/50">
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">Shortage Workstations</p>
+            <p className="mt-2 text-2xl font-bold text-foreground">{workforceMetrics.shortageCount}</p>
+          </div>
+          <div className="rounded-lg border border-border p-4 bg-background/50">
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">Shortage Headcount</p>
+            <p className="mt-2 text-2xl font-bold text-foreground">{workforceMetrics.shortageHeadcount}</p>
+          </div>
+        </div>
+
+        <div className="mt-4 overflow-hidden rounded-lg border border-border bg-background/50">
+          <table className="w-full">
+            <thead className="bg-muted border-b border-border">
+              <tr>
+                <th className="text-left p-4 text-sm font-semibold text-muted-foreground">Workstation</th>
+                <th className="text-left p-4 text-sm font-semibold text-muted-foreground">Required</th>
+                <th className="text-left p-4 text-sm font-semibold text-muted-foreground">Eligible</th>
+                <th className="text-left p-4 text-sm font-semibold text-muted-foreground">Shortage</th>
+                <th className="text-left p-4 text-sm font-semibold text-muted-foreground">Coverage</th>
+              </tr>
+            </thead>
+            <tbody>
+              {workforceMetrics.snapshots.map((snapshot) => (
+                <tr key={snapshot.workstationId} className="border-b border-border hover:bg-accent transition-colors">
+                  <td className="p-4 text-foreground font-medium">{snapshot.workstationName}</td>
+                  <td className="p-4 text-muted-foreground">{snapshot.requiredHeadcount}</td>
+                  <td className="p-4 text-muted-foreground">{snapshot.eligibleHeadcount}</td>
+                  <td className="p-4 text-muted-foreground">{snapshot.shortage}</td>
+                  <td className="p-4 text-muted-foreground">{snapshot.coverageRate.toFixed(0)}%</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
