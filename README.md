@@ -429,6 +429,150 @@ Operator Skill Level >= Minimum Skill Requirement
 > **Validation Rule:** Minimal skill requirement adalah level **2 (Qualified)**.
 
 ---
+### Manajemen Skill Matrix & Manpower (Detail)
+
+Di bawah ini disajikan dokumentasi terperinci untuk mengimplementasikan manajemen Skill Matrix dan manpower: model data, alur proses, otomatisasi, metrik operasional, dan langkah implementasi berikutnya.
+
+1) Model Data (Detail)
+
+- `skills` — master daftar kemampuan/skill
+    - Fields: `id UUID PK`, `code VARCHAR`, `name VARCHAR`, `description TEXT`
+- `skill_levels` — definisi level kompetensi
+    - Fields: `level INT PK`, `label VARCHAR`, `description TEXT`
+- `operators` — data operator
+    - Fields: `id UUID PK`, `nik VARCHAR UNIQUE`, `name VARCHAR`, `photo_url TEXT`, `active BOOLEAN`
+- `operator_skills` — mapping operator → skill + level
+    - Fields: `id UUID PK`, `operator_id UUID FK`, `skill_id UUID FK`, `level INT`, `assessed_at TIMESTAMPTZ`, `certified_until TIMESTAMPTZ`, `evidence_url TEXT`, `notes TEXT`
+- `workstations` — konfigurasi workstation
+    - Fields: `id UUID PK`, `line_id UUID FK`, `name VARCHAR`, `sequence INT`, `minimum_skill INT DEFAULT 2`, `ideal_cycle_time DECIMAL`
+- `workstation_skill_requirements` — kebutuhan skill per workstation (multiple rows per WS)
+    - Fields: `id UUID PK`, `workstation_id UUID FK`, `skill_id UUID NULL`, `minimum_level INT NOT NULL DEFAULT 2`, `required BOOLEAN DEFAULT TRUE`, `notes TEXT`
+- `workstation_defaults` — default manpower mapping per WS per shift type
+    - Fields: `id UUID PK`, `workstation_id UUID FK`, `default_headcount INT`, `default_role VARCHAR`, `shift_type VARCHAR`
+- `manpower_assignments` — live assignment / historical
+    - Fields: `id UUID PK`, `work_order_id UUID FK NULLABLE`, `workstation_id UUID FK`, `operator_id UUID FK`, `assigned_at TIMESTAMPTZ`, `assigned_by UUID`, `role VARCHAR`, `active BOOLEAN`
+
+2) Contoh DDL + Seed Singkat
+
+```sql
+-- skill levels
+CREATE TABLE skill_levels(level INT PRIMARY KEY, label VARCHAR, description TEXT);
+INSERT INTO skill_levels(level,label,description) VALUES
+(1,'Belajar','Dengan pengawasan ketat'),
+(2,'Mampu','Mandiri'),
+(3,'Terampil','Analitikal'),
+(4,'Expert','Bisa melatih');
+
+-- skills
+CREATE TABLE skills(id UUID PRIMARY KEY DEFAULT gen_random_uuid(), code VARCHAR UNIQUE, name VARCHAR, description TEXT);
+INSERT INTO skills(code,name) VALUES ('SOLDER','Soldering','Kemampuan solder manual dan reflow');
+
+-- operators + operator_skills (contoh)
+CREATE TABLE operators(id UUID PRIMARY KEY DEFAULT gen_random_uuid(), nik VARCHAR UNIQUE, name VARCHAR, photo_url TEXT, active BOOLEAN DEFAULT true);
+CREATE TABLE operator_skills(id UUID PRIMARY KEY DEFAULT gen_random_uuid(), operator_id UUID REFERENCES operators(id), skill_id UUID REFERENCES skills(id), level INT, assessed_at TIMESTAMPTZ, certified_until TIMESTAMPTZ, notes TEXT);
+
+-- workstation requirements
+CREATE TABLE workstation_skill_requirements(id UUID PRIMARY KEY DEFAULT gen_random_uuid(), workstation_id UUID REFERENCES workstations(id), skill_id UUID NULL, minimum_level INT DEFAULT 2, notes TEXT);
+CREATE TABLE workstation_defaults(id UUID PRIMARY KEY DEFAULT gen_random_uuid(), workstation_id UUID REFERENCES workstations(id), default_headcount INT DEFAULT 1, default_role VARCHAR, shift_type VARCHAR);
+```
+
+3) Proses & Validasi Assignment (Algoritma)
+
+- Saat membuat/menjalankan assignment (manual atau otomatis), jalankan prosedur:
+    1. Ambil row `workstation_skill_requirements` untuk `workstation_id`.
+    2. Jika ada requirement spesifik (`skill_id` not null): periksa operator punya `operator_skills` dengan `skill_id` yang sama dan `level >= minimum_level`.
+    3. Jika semua requirement terpenuhi → mark `eligible=true`.
+    4. Jika ada requirement NULL → gunakan `workstations.minimum_skill` dan cek apakah operator memiliki *any* skill record dengan `level >= minimum_skill` (opsi: cek primary skill per operator).
+    5. Jika tidak eligible: tergantung kebijakan, tampilkan alasan dan opsi (request approval / delegate).
+
+Pseudocode singkat:
+
+```pseudo
+reqs = SELECT * FROM workstation_skill_requirements WHERE workstation_id = X;
+for req in reqs:
+    if req.skill_id is not null:
+        ok = EXISTS (SELECT 1 FROM operator_skills WHERE operator_id=Y AND skill_id=req.skill_id AND level>=req.minimum_level)
+    else:
+        ok = EXISTS (SELECT 1 FROM operator_skills WHERE operator_id=Y AND level>=workstations.minimum_skill)
+    if not ok: return not eligible(reason)
+return eligible
+```
+
+4) Otomatisasi & Integrasi (Contoh implementasi)
+
+- Supabase (Postgres) triggers / RLS:
+    - Function `validate_assignment(workstation_id, operator_id)` yang mengembalikan BOOL + reason; dijalankan di API saat assignment.
+    - Trigger on `manpower_assignments` BEFORE INSERT: panggil `validate_assignment`, batalkan insert jika hard-block.
+- Background job / Edge function untuk rekomendasi:
+    - Query eligible operators per WS dan prioritas (same line, same group, skill level desc, last_assessed desc).
+    - Jika shortage, kirim notifikasi ke Sub Leader / Leader dengan opsi rekomendasi.
+- Webhook / Notification flow:
+    - Event `work_order.created` → populate `manpower_assignments` using `workstation_defaults` → run validate; jika shortage → emit `and-on` or `manpower.recommendation`.
+
+5) Metrik Operasional & Query Contoh
+
+- Skill Coverage (per line): % workstations yang punya >=1 eligible operator
+
+SQL (coverage per line):
+```sql
+WITH ws_needed AS (
+    SELECT w.id AS ws_id, w.line_id
+    FROM workstations w
+), eligible AS (
+    SELECT DISTINCT wr.workstation_id
+    FROM workstation_skill_requirements wr
+    JOIN operator_skills os ON ( (wr.skill_id IS NOT NULL AND os.skill_id = wr.skill_id) OR (wr.skill_id IS NULL AND os.level >= wr.minimum_level) )
+    JOIN operators o ON o.id = os.operator_id AND o.active = true
+)
+SELECT l.id AS line_id, 100.0 * SUM(CASE WHEN e.workstation_id IS NOT NULL THEN 1 ELSE 0 END) / COUNT(w.id) AS coverage_pct
+FROM lines l
+JOIN workstations w ON w.line_id = l.id
+LEFT JOIN eligible e ON e.workstation_id = w.id
+GROUP BY l.id;
+```
+
+- Shortage report (per shift): workstations where assigned < default_headcount
+```sql
+SELECT w.id, w.name, wd.default_headcount, COUNT(ma.id) AS assigned
+FROM workstations w
+LEFT JOIN workstation_defaults wd ON wd.workstation_id = w.id AND wd.shift_type = :shift_type
+LEFT JOIN manpower_assignments ma ON ma.workstation_id = w.id AND ma.active = true
+GROUP BY w.id, wd.default_headcount
+HAVING COUNT(ma.id) < COALESCE(wd.default_headcount,1);
+```
+
+6) UI / UX detail
+
+- Skill Matrix page
+    - Grid: rows = operators, cols = skills; cell shows level, last assessed date, evidence link.
+    - Filters: line, skill, level, active.
+- Workstation Requirements page
+    - List per line; modal untuk tambah requirement (skill + minimum_level) atau gunakan fallback minimum_skill.
+- WO Creation flow
+    - Side panel: recommended operators, color-coded eligibility. Buttons: `Apply Recommendation`, `Request Approval`.
+
+7) Langkah Implementasi Prioritas (Roadmap 6–8 minggu)
+
+- Week 1: Buat schema + migrations + seed minimal (`skill_levels`, `skills`, contoh operator`).
+- Week 2: Implement `operator_skills` CRUD + UI Skill Matrix (read/write minimal).
+- Week 3: Implement `workstation_skill_requirements` CRUD + UI Workstation Requirements.
+- Week 4: Implement `validate_assignment` function, trigger, dan integrasi pada endpoint assignment.
+- Week 5: Auto-suggest background job + notification workflow untuk shortage.
+- Week 6: Metrics & dashboard (coverage, shortage heatmap), testing, dan dokumentasi.
+
+8) Governance & Operasional
+
+- Roles: hanya Supervisor/HR dapat mengubah `operator_skills.level` dan `certified_until`.
+- Audit: simpan semua perubahan di `operator_skill_changes` (who, when, old_level, new_level, evidence_url).
+- Assessment cadence: tentukan kebijakan (mis. re-assess tiap 3–6 bulan) dan buat reminder otomatis.
+
+Jika Anda setuju, saya bisa:
+- Buatkan migration SQL + seed file untuk semua tabel di atas, atau
+- Implementasikan endpoint Supabase function `validate_assignment` dan contoh trigger, atau
+- Scaffold halaman UI di `src/routes` untuk `Skill Matrix` dan `Workstation Requirements`.
+
+Sebagai langkah selanjutnya, pilih opsi yang Anda mau saya kerjakan sekarang.
+
 
 ## 10. Manajemen Operator
 
