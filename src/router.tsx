@@ -1,9 +1,10 @@
 import { createRootRoute, createRoute, createRouter as createTanStackRouter } from "@tanstack/react-router";
-import { LayoutDashboard, Home, Box, Users, Settings, ChevronLeft, ChevronRight, Sun, Moon, Eye, EyeOff, Loader2 } from "lucide-react";
+import { LayoutDashboard, Home, Box, Users, Settings, ClipboardList, ChevronLeft, ChevronRight, Sun, Moon, Eye, EyeOff, Loader2 } from "lucide-react";
 import { Outlet, Link, redirect } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { useTheme } from "./theme";
+import { TrainingAssessmentPage } from "@/components/training-assessment-page";
 import {
   fetchWorkforceAnalyticsSnapshot,
   getAssignmentPreview,
@@ -196,6 +197,7 @@ function DashboardLayout() {
     { icon: LayoutDashboard, label: "Dashboard", to: "/dashboard" as const },
     { icon: Home, label: "Home", to: "/" as const },
     { icon: Box, label: "Components", to: "/dashboard/components" as const },
+    { icon: ClipboardList, label: "Training", to: "/dashboard/training" as const },
     { icon: Users, label: "Users", to: "/dashboard/users" as const },
     { icon: Settings, label: "Settings", to: "/dashboard/settings" as const },
   ];
@@ -761,6 +763,13 @@ export const settingsRoute = createRoute({
   component: SettingsPage,
 });
 
+// Training Route
+export const trainingRoute = createRoute({
+  getParentRoute: () => dashboardRoute,
+  path: "training",
+  component: TrainingAssessmentPage,
+});
+
 function SettingsPage() {
   return (
     <div className="space-y-6">
@@ -776,7 +785,7 @@ function SettingsPage() {
 const routeTree = rootRoute.addChildren([
   loginRoute,
   indexRoute,
-  dashboardRoute.addChildren([dashboardIndexRoute, componentsRoute, usersRoute, settingsRoute]),
+  dashboardRoute.addChildren([dashboardIndexRoute, componentsRoute, trainingRoute, usersRoute, settingsRoute]),
 ]);
 
 // Create Router
