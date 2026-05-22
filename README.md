@@ -1,11 +1,13 @@
 # Smart Manufacturing MES
 ## Dokumentasi Proyek
 
-**Nama Proyek:** Smart Manufacturing MES  
+**Nama Proyek:** C-PRO <br>Chao Long Production System  
 **Perusahaan:** PT Chao Long Motor Parts Indonesia  
 **Jenis Dokumen:** Dokumentasi Proyek  
 **Versi:** 1.0  
 **Klasifikasi:** Internal
+
+Database menggunakan Supabase lokal.
 
 ---
 
@@ -41,15 +43,14 @@
 
 ## 1. Gambaran Proyek
 
-Smart Manufacturing MES adalah platform digital **Manufacturing Execution System (MES)** yang dirancang untuk mendukung operasional produksi di PT Chao Long Motor Parts Indonesia. Sistem ini mengintegrasikan monitoring produksi realtime, validasi proses, manajemen sumber daya manusia, hingga analitik berbasis AI.
+C-PRO adalah versi Lokal/Internal **Manufacturing Execution System (MES)** yang dirancang untuk mendukung operasional produksi di PT Chao Long Motor Parts Indonesia. Sistem ini mengintegrasikan monitoring produksi realtime, validasi proses, manajemen sumber daya manusia, hingga analitik berbasis AI.
 
 ### Target Industri
 
-- Automotive
-- Electronics
-- Injection Molding
-- Assembly Manufacturing
-- Smart Factory
+- Otomotif
+- Elektronik
+- Perakitan
+- Pabrik Cerdas
 
 ### Modul Utama
 
@@ -63,7 +64,7 @@ Smart Manufacturing MES adalah platform digital **Manufacturing Execution System
 | 6 | Autonomous Maintenance | Pemeliharaan mandiri workstation berbasis master AM check item |
 | 7 | Digital Inspection System | Sistem inspeksi digital termasuk master 5F/5L check item |
 | 8 | Dynamic Line Balancing | Penyeimbangan lini produksi |
-| 9 | Manufacturing Analytics | Analitik dan prediksi berbasis |
+| 9 | Manufacturing Analytics | Analitik dan prediksi berbasis data |
 | 10 | Smart Factory Platform | Platform terintegrasi smart factory |
 
 ---
@@ -113,12 +114,12 @@ Sistem menggunakan teknologi realtime berikut:
 - **WebSocket** — koneksi bidireksional persisten
 - **Push Notification** — notifikasi instan ke device
 
-### Realtime Monitoring Scope
+### Ruang Lingkup Pemantauan Realtime
 
-- Production monitoring
-- Andon monitoring
-- Machine monitoring
-- Operator monitoring
+- Pemantauan produksi
+- Pemantauan andon
+- Pemantauan mesin
+- Pemantauan operator
 
 ---
 
@@ -128,22 +129,24 @@ Sistem menggunakan teknologi realtime berikut:
 
 ```
 Manager
- └── Supervisor
-      └── Leader
-           └── Sub Leader
-                └── Operator
+ └── Assistant Manager
+     └── Supervisor
+         └── Leader
+             └── Sub Leader
+                 └── Operator
 ```
 
 ### Role Permission Matrix
 
 | Role | Access Level | Deskripsi |
 |------|-------------|-----------|
-| Super Admin | Full system access | Akses penuh ke seluruh sistem |
-| Manager | All supervisors and lines | Monitoring semua supervisor dan lini |
-| Supervisor | All leaders and lines under supervision | Monitoring leader dan lini di bawah supervisi |
-| Leader | All sub leaders and operators | Monitoring sub leader dan operator |
-| Sub Leader | Operational input | Input operasional harian |
-| Operator | View only / attendance | Lihat data dan absensi |
+| Super Admin | Akses penuh sistem | Akses penuh ke seluruh sistem |
+| Manager | Semua assistant manager & lini | Monitoring semua assistant manager dan lini |
+| Assistant Manager | Semua supervisor, leader, dan lini | Monitoring semua supervisor, leader, dan lini |
+| Supervisor | Semua leader & lini di bawah pengawasan | Monitoring leader dan lini di bawah supervisi |
+| Leader | Semua sub leader & operator | Monitoring sub leader dan operator |
+| Sub Leader | Input operasional | Input operasional harian |
+| Operator | Hanya melihat / kehadiran | Lihat data dan absensi |
 
 ---
 
@@ -158,8 +161,9 @@ PT Chao Long Motor Parts Indonesia memiliki struktur produksi sebagai berikut:
 | Category | Deskripsi |
 |----------|-----------|
 | SMT | Surface Mount Technology |
-| Sub Assy | Sub Assembly |
-| Final Assy | Final Assembly |
+| Section 1 | CCU, USB Charger and Meter Assy |
+| Section 2 | Speedometer, and Sensor |
+| DPP | Dial Plate Printing |
 
 **Product Categories:**
 
@@ -194,15 +198,58 @@ Setiap line produksi memiliki group:
 
 ---
 
+### Detail Section 1
+
+```
+Section 1
+       └── Line CCU 1
+    |   └── Group A
+    |   └── Group B
+    |   └── Group C
+       └── Line CCU 2
+    |   └── Group A
+    |   └── Group B
+    |   └── Group C
+       └── Line CCU 3
+    |   └── Group A
+    |   └── Group B
+    |   └── Group C
+       └── Line USB Charger 1
+    |   └── Group A
+    |   └── Group B
+    |   └── Group C
+    ### Line Manajemen Struktur
+
+    ```
+    Section 1
+        └── Group CCU
+            └── Workstation CCU 1
+            └── Workstation CCU 2
+            └── Workstation CCU 3
+            └── Workstation CCU 4
+            └── Workstation CCU 5
+            └── Workstation CCU 6
+
+        └── Group USB Charger
+            └── Workstation USB 1
+            └── Workstation USB 2
+            └── Workstation USB 3
+            └── Workstation USB 4
+    ```
+
+```
+
+
 ## 6. Manajemen Shift & Waktu Kerja
 
 ### Shift Types
 
 | Shift Type | Durasi Kerja |
 |-----------|-------------|
-| Shift 1 | 7 jam kerja |
-| Shift 2 | 8 jam kerja |
-| Shift 3 | 12 jam kerja |
+| Non shift type  | 8 jam kerja |
+| 2 Shift type | 8 jam kerja |
+| 3 shift type  | 7 jam kerja |
+| Long Shift type | 12 jam kerja |
 
 ### Multiple Break Management
 
@@ -216,13 +263,28 @@ Setiap shift memiliki beberapa sesi istirahat:
 
 > Durasi dapat berbeda tergantung tipe shift.
 
+```
+Non shift type
+ └── Non shift/Regular
+2 Shift type
+ └── Shift 1 (8 jam kerja)
+ └── Shift 2 (8 jam kerja)
+3 shift type 
+ └── Shift 1 (7 jam kerja)
+ └── Shift 2 (7 jam kerja)
+ └── Shift 3 (7 jam kerja)
+Long shift type
+ └── Shift 1 (12 jam kerja)
+ └── Shift 2 (12 jam kerja)
+```
+
 ### Friday Special Rule
 
 Sistem wajib memperhitungkan aturan khusus hari Jumat:
 
-- Waktu istirahat berbeda dari hari biasa
+- Waktu istirahat makan siang berbeda dari hari biasa (Senin-Kamis)
 - Tambahan waktu sholat Jumat
-- Jam kerja efektif berbeda
+- Jam kerja efektif shift 1 berbeda (Hanya Jam kerja shift 1 semua type shift yang berbeda)
 
 **Friday System Requirements:**
 - Menghitung effective working time hari Jumat
@@ -235,6 +297,8 @@ Sistem wajib memperhitungkan aturan khusus hari Jumat:
 Untuk shift 7 jam:
 - Terdapat tambahan hari kerja di hari Sabtu
 - Digunakan untuk memenuhi 40 jam kerja per minggu
+
+**Aturan Tambahan:** Jika `Shift = 7 jam kerja`, maka pada minggu tersebut operator wajib masuk pada hari Sabtu selama 5 jam kerja untuk memenuhi aturan 40 jam per minggu.
 
 **System Requirements:**
 - Menghitung total working hour mingguan
@@ -282,8 +346,9 @@ Karena working time berbeda antar shift, line balance harus mempertimbangkan:
 | Shift Type | ENUM |
 | Working Hour | DECIMAL |
 | Active Status | BOOLEAN |
+| Saturday Working | BOOLEAN |
 
-**Table: `shift_breaks`**
+**Table:  `shift_breaks`**
 
 | Field | Type |
 |-------|------|
@@ -323,7 +388,13 @@ Line Preparation
     ↓
 Manpower Validation
     ↓
-Production Start
+Check Autonomous Maintenance
+    ↓
+Inspection 5 First Product
+    ↓
+Production Start (Input by per Hour)
+    ↓
+Inspection 5 Last Product
 ```
 
 ---
@@ -369,10 +440,10 @@ Operator Skill Level >= Minimum Skill Requirement
 
 | Level | Description |
 |-------|-------------|
-| 1 | Training |
-| 2 | Qualified |
-| 3 | Advanced |
-| 4 | Expert |
+| 1 | Belajar (Dengan pengawasan ketat) |
+| 2 | Mampu (Mandiri) |
+| 3 | Terampil (Analitikal) |
+| 4 | Expert (Bisa Melatih) |
 
 > **Validation Rule:** Minimal skill requirement adalah level **2 (Qualified)**.
 
@@ -499,15 +570,13 @@ Supervisor
 
 Setiap workstation memiliki daftar item check autonomous maintenance yang wajib dilakukan sebelum produksi dimulai.
 
-### Contoh Checklist — Injection Workstation
+### Contoh Checklist — Gluing Workstation
 
-| Item Check |
-|-----------|
-| Heater temperature |
-| Air pressure |
-| Mold cleaning |
-| Sensor condition |
-| Safety checking |
+| Item Check | Standard | Frequency | Metode |
+|-----------|-----------|-----------|-----------|
+| Air Blow Ionizer | Clean/No dust | Daily | Visually |
+| Workbench | Clean/No dust | Daily | Visually |
+| ESD Tray | Clean/No dust | Daily | Visually |
 
 ### Master Checklist Autonomous Maintenance
 
@@ -556,6 +625,19 @@ Tabel `fivef5l_check_items` menjadi master item checksheet 5F/5L per `line_id`, 
 | Photo Evidence | Dokumentasi foto |
 | Inspection Report | Laporan resmi inspeksi |
 
+### Contoh Checklist — Line CCU Product Model: D52-03
+
+| Checking Point | Specification | Metode | Measurement results (N=1..5) | Judgment |
+|---------------|---------------|--------|-------------------------------:|:--------:|
+| Burning Program (BETA) — Voltage step 1 | 1.5 ~ 1.7 V | Visual | — | OK / NG |
+| Burning Program (BETA) — Voltage step 2 | 3.0 ~ 3.4 V | Visual | — | OK / NG |
+| Burning Program (BETA) — Programming Success | No error messages | Visual | — | OK / NG |
+| Semi-Finished function inspection | Visual display — Result Inspection (PASS) | Visual | — | OK / NG |
+| Burning Program (BT official) — Correct program version | BLE Software V2.E.04 | Visual | — | OK / NG |
+| Burning Program (BT official) — Voltage 2 | 3.0 ~ 3.4 V | Visual | — | OK / NG |
+| Burning Program (BT official) — Programming Success | No error messages | Visual | — | OK / NG |
+
+
 ---
 
 ## 15. Pengawasan Produksi Per Jam
@@ -566,7 +648,7 @@ Tabel `fivef5l_check_items` menjadi master item checksheet 5F/5L per `line_id`, 
 |-------|-----------|
 | Plan Qty | Target produksi per jam |
 | Actual Qty | Realisasi produksi per jam |
-| Loss Qty | Jumlah produk loss |
+| Loss Qty | Jumlah produk Defect |
 | Downtime | Waktu henti (menit) |
 | 5M1E Abnormality | Catatan abnormalitas 5M1E |
 
@@ -823,17 +905,17 @@ membaca:
 
 | Technology | Keterangan |
 |-----------|-----------|
-| TanStack Start | React framework utama |
+| TanStack Start | Framework React yang digunakan |
 | TailwindCSS | Utility-first CSS framework |
-| Shadcn UI | Komponen UI siap pakai |
-| PWA Mobile | Progressive Web App mobile |
+| Shadcn UI | Kumpulan komponen UI siap pakai |
+| PWA Mobile | Aplikasi web progresif untuk mobile |
 
 ### Backend
 
 | Technology | Keterangan |
 |-----------|-----------|
-| Supabase | Backend-as-a-Service |
-| PostgreSQL | Database relasional |
+| Supabase | Backend-as-a-Service (local) |
+| PostgreSQL | Database relasional (melalui Supabase local) |
 | Supabase Auth | Autentikasi & otorisasi |
 | Supabase Storage | Penyimpanan file & foto |
 
@@ -845,12 +927,12 @@ membaca:
 | Gemini | Model alternatif |
 | Kimi | Model tambahan |
 
-### Reporting & Visualization
+### Pelaporan & Visualisasi
 
 | Technology | Keterangan |
 |-----------|-----------|
-| Power BI | Business intelligence reporting |
-| Grafana | Dashboard monitoring & metrics |
+| Power BI | Pelaporan business intelligence |
+| Grafana | Dashboard pemantauan & metrik |
 
 ### IoT Integration
 
@@ -860,18 +942,18 @@ membaca:
 | RFID | Validasi kartu identitas operator |
 | QR Scanner | Scanning QR code produk & WO |
 
-### Smart Factory Features
+### Fitur Smart Factory
 
 | Feature | Keterangan |
 |---------|-----------|
 | RFID Validation | Validasi operator masuk workstation |
-| QR Tracking | Tracking produk dan WO |
-| IoT Machine Monitoring | Monitoring kondisi mesin |
-| Predictive Maintenance | Prediksi kebutuhan maintenance |
-| Line Balancing | Optimasi lini berbasis |
+| QR Tracking | Pelacakan produk dan WO |
+| IoT Machine Monitoring | Pemantauan kondisi mesin via IoT |
+| Predictive Maintenance | Prediksi kebutuhan pemeliharaan |
+| Line Balancing | Optimalisasi lini produksi |
 | Face Recognition | Pengenalan wajah operator |
 | Auto Time Study | Studi waktu otomatis |
-| Digital Gemba | Monitoring lapangan digital |
+| Digital Gemba | Pemantauan lapangan secara digital |
 
 ---
 

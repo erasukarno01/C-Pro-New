@@ -1,0 +1,213 @@
+import { Link, Outlet, createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
+import { cn } from "@/lib/utils";
+import {
+  Rocket,
+  Zap,
+  Shield,
+  ChevronDown,
+  Menu,
+  X,
+  Github,
+  Twitter,
+} from "lucide-react";
+
+export const Route = createFileRoute("/layout")({
+  component: HomeLayout,
+});
+
+function HomeLayout() {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  return (
+    <div className="min-h-screen bg-background text-foreground relative overflow-hidden">
+      {/* Animated Background */}
+      <div className="fixed inset-0 -z-10">
+        <div className="absolute inset-0 bg-gradient-to-br from-indigo-950 via-background to-cyan-950" />
+        <div className="absolute inset-0 grid-bg" />
+        {/* Floating orbs */}
+        <div className="absolute top-1/4 -left-32 h-96 w-96 rounded-full bg-cyan-500/20 blur-3xl animate-pulse" />
+        <div className="absolute bottom-1/4 -right-32 h-96 w-96 rounded-full bg-blue-500/20 blur-3xl animate-pulse delay-1000" />
+      </div>
+
+      {/* Navigation */}
+      <nav className="sticky top-0 z-50 border-b border-white/5 bg-background/50 backdrop-blur-xl">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="flex h-16 items-center justify-between">
+            {/* Logo */}
+            <Link to="/" className="flex items-center gap-2">
+              <div className="relative">
+                <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-cyan-400 via-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-cyan-500/25">
+                  <Rocket className="h-5 w-5 text-white" />
+                </div>
+                <div className="absolute -inset-1 rounded-xl bg-gradient-to-r from-cyan-400 to-blue-500 opacity-30 blur-sm -z-10" />
+              </div>
+              <span className="text-xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
+                Nexus
+              </span>
+            </Link>
+
+            {/* Desktop Nav */}
+            <div className="hidden md:flex items-center gap-8">
+              <Link to="/" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+                Home
+              </Link>
+              <Link to="/dashboard" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+                Dashboard
+              </Link>
+              <Link to="/components" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+                Components
+              </Link>
+              <button className="h-9 px-4 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-600 text-sm font-medium text-white hover:opacity-90 transition-opacity">
+                Get Started
+              </button>
+            </div>
+
+            {/* Mobile Menu Button */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="md:hidden p-2 rounded-lg hover:bg-accent transition-colors"
+            >
+              {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile Menu */}
+        {mobileMenuOpen && (
+          <div className="md:hidden border-t border-white/5 bg-background/95 backdrop-blur-xl">
+            <div className="px-4 py-4 space-y-2">
+              <Link
+                to="/"
+                className="block px-4 py-2 rounded-lg hover:bg-accent transition-colors"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Home
+              </Link>
+              <Link
+                to="/dashboard"
+                className="block px-4 py-2 rounded-lg hover:bg-accent transition-colors"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Dashboard
+              </Link>
+              <Link
+                to="/components"
+                className="block px-4 py-2 rounded-lg hover:bg-accent transition-colors"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Components
+              </Link>
+            </div>
+          </div>
+        )}
+      </nav>
+
+      {/* Hero Section */}
+      <section className="relative py-20 lg:py-32">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-cyan-500/30 bg-cyan-500/10 text-cyan-400 text-sm mb-8">
+              <Zap className="h-3.5 w-3.5" />
+              Next Generation Dashboard
+            </div>
+            <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold tracking-tight mb-6">
+              <span className="bg-gradient-to-r from-white via-gray-200 to-gray-400 bg-clip-text text-transparent">
+                Build the Future
+              </span>
+              <br />
+              <span className="bg-gradient-to-r from-cyan-400 via-blue-500 to-indigo-500 bg-clip-text text-transparent">
+                With Confidence
+              </span>
+            </h1>
+            <p className="mx-auto max-w-2xl text-lg text-muted-foreground mb-10">
+              A modern, futuristic dashboard template built with React, Tailwind CSS,
+              and shadcn/ui. Crafted for developers who demand excellence.
+            </p>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <Link
+                to="/dashboard"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-medium hover:opacity-90 transition-all hover:shadow-lg hover:shadow-cyan-500/25"
+              >
+                <Rocket className="h-4 w-4" />
+                Launch Dashboard
+              </Link>
+              <a
+                href="#"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-foreground font-medium transition-colors"
+              >
+                <Github className="h-4 w-4" />
+                View on GitHub
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Features Grid */}
+      <section className="py-20 border-t border-white/5">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-bold mb-4">Features</h2>
+            <p className="text-muted-foreground">Everything you need to build amazing products</p>
+          </div>
+          <div className="grid md:grid-cols-3 gap-6">
+            {[
+              {
+                icon: Zap,
+                title: "Lightning Fast",
+                desc: "Built with Vite for instant HMR and optimized production builds",
+              },
+              {
+                icon: Shield,
+                title: "Type Safe",
+                desc: "Full TypeScript support with strict mode enabled",
+              },
+              {
+                icon: Rocket,
+                title: "Modern Stack",
+                desc: "React 19, TanStack Router, and Tailwind CSS v4",
+              },
+            ].map((feature, i) => (
+              <div
+                key={i}
+                className="group relative p-6 rounded-2xl border border-white/5 bg-card/50 backdrop-blur-sm hover:border-cyan-500/30 transition-all hover:shadow-lg hover:shadow-cyan-500/10"
+              >
+                <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                  <feature.icon className="h-6 w-6 text-cyan-400" />
+                </div>
+                <h3 className="text-lg font-semibold mb-2">{feature.title}</h3>
+                <p className="text-sm text-muted-foreground">{feature.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="border-t border-white/5 py-12">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
+                <Rocket className="h-4 w-4 text-white" />
+              </div>
+              <span className="font-semibold">Nexus</span>
+            </div>
+            <div className="flex items-center gap-4">
+              <a href="#" className="p-2 rounded-lg hover:bg-accent transition-colors">
+                <Github className="h-5 w-5" />
+              </a>
+              <a href="#" className="p-2 rounded-lg hover:bg-accent transition-colors">
+                <Twitter className="h-5 w-5" />
+              </a>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              © 2025 Nexus. All rights reserved.
+            </p>
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+}
