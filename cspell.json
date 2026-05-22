@@ -680,8 +680,28 @@
     "official",
     "Correct",
     "BLE",
-    "D52-03"
+    "D52-03",
+    "Setup",
+    "didefinisikan",
+    "memvalidasi",
+    "panduan",
+    "direkomendasikan",
+    "unik",
+    "sertifikasi",
+    "Requires",
+    "soldering",
+    "Implementasi",
+    "tipikal",
+    "disimpan",
+    "juga",
+    "mempermudah",
+    "Headcount",
+    "Specialist",
+    "Optional",
+    "behavior",
+    "memicu"
   ],
+  
   "ignorePaths": [
     "node_modules",
     "dist"
