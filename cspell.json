@@ -680,6 +680,9 @@
     "official",
     "Correct"
   ],
+    "BLE",
+    "D52-03"
+  ],
   "ignorePaths": [
     "node_modules",
     "dist"
