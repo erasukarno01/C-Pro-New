@@ -1279,6 +1279,83 @@ Relasi inti yang perlu dipahami:
 | `work_orders` | memicu assignment manpower dan pencatatan output produksi |
 | `autonomous_check_items` / `fivef5l_check_items` | menjadi master checklist berbasis workstation |
 
+### ERD Detail — Skill Matrix & Manpower
+
+```mermaid
+erDiagram
+    OPERATORS ||--o{ OPERATOR_SKILLS : has
+    SKILLS ||--o{ OPERATOR_SKILLS : maps
+    WORKSTATIONS ||--o{ WORKSTATION_SKILL_REQUIREMENTS : requires
+    SKILLS ||--o{ WORKSTATION_SKILL_REQUIREMENTS : references
+    WORKSTATIONS ||--o{ WORKSTATION_DEFAULTS : defaults
+    WORKSTATIONS ||--o{ MANPOWER_ASSIGNMENTS : receives
+    OPERATORS ||--o{ MANPOWER_ASSIGNMENTS : assigned
+    WORK_ORDERS ||--o{ MANPOWER_ASSIGNMENTS : originates
+
+    OPERATOR_SKILLS {
+        uuid id PK
+        uuid operator_id FK
+        uuid skill_id FK
+        int level
+        timestamptz assessed_at
+        timestamptz certified_until
+        text evidence_url
+        text notes
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    WORKSTATION_SKILL_REQUIREMENTS {
+        uuid id PK
+        uuid workstation_id FK
+        uuid skill_id FK_NULL
+        int minimum_level
+        boolean required
+        text notes
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    WORKSTATION_DEFAULTS {
+        uuid id PK
+        uuid workstation_id FK
+        int default_headcount
+        varchar default_role
+        varchar shift_type
+        text notes
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    MANPOWER_ASSIGNMENTS {
+        uuid id PK
+        uuid work_order_id FK_NULL
+        uuid workstation_id FK
+        uuid operator_id FK
+        varchar role
+        timestamptz assigned_at
+        uuid assigned_by FK_NULL
+        boolean active
+        text notes
+        timestamptz created_at
+        timestamptz updated_at
+    }
+```
+
+| Tabel | Fungsi | Key Relasi |
+|-------|--------|------------|
+| `operator_skills` | Menyimpan level skill operator per skill | `operator_id` → `operators.id`, `skill_id` → `skills.id` |
+| `workstation_skill_requirements` | Mendefinisikan requirement minimum skill per workstation | `workstation_id` → `workstations.id`, `skill_id` nullable |
+| `workstation_defaults` | Menyimpan default manpower dan role per workstation/shift | `workstation_id` → `workstations.id`, unique per `shift_type` |
+| `manpower_assignments` | Menyimpan assignment operator aktif/historis ke workstation | `workstation_id` → `workstations.id`, `operator_id` → `operators.id`, `work_order_id` nullable |
+
+Aturan relasi operasional:
+
+- `operator_skills` menentukan apakah operator eligible untuk penugasan.
+- `workstation_skill_requirements` menentukan skill minimum yang wajib dipenuhi.
+- `workstation_defaults` menentukan headcount default saat WO dibuat.
+- `manpower_assignments` menjadi jembatan operasional antara WO, workstation, dan operator.
+
 ### Additional Master Tables (Manufacturing Structure)
 
 **Table: `production_groups`**
